@@ -13,7 +13,6 @@ class EditorManager {
         // Track active views and layout
         this.activeViews = new Set(['wysiwyg']); // Start with WYSIWYG only
         this.isSyncing = false; // Prevent sync loops
-        this.syncTimeouts = new Map(); // Debounce sync operations
         
         // Create containers for views
         this.createViewContainers();
@@ -73,18 +72,16 @@ class EditorManager {
                 // Skip sync if content change came from sync operation
                 if (source === 'sync') return;
                 
-                this.debouncedSync('wysiwyg-to-markdown', () => {
-                    // Skip sync if composition is active in WYSIWYG view
-                    if (this.wysiwygView.isComposing()) {
-                        return;
-                    }
-                    
-                    if (this.markdownView && this.activeViews.has('markdown') && !this.isSyncing) {
-                        this.isSyncing = true;
-                        this.markdownView.setContent(content, { preserveCursor: true, source: 'sync' });
-                        this.isSyncing = false;
-                    }
-                });
+                // Skip sync if composition is active in WYSIWYG view
+                if (this.wysiwygView.isComposing()) {
+                    return;
+                }
+                
+                if (this.markdownView && this.activeViews.has('markdown') && !this.isSyncing) {
+                    this.isSyncing = true;
+                    this.markdownView.setContent(content, { preserveCursor: true, source: 'sync' });
+                    this.isSyncing = false;
+                }
             };
         }
         
@@ -94,35 +91,18 @@ class EditorManager {
                 // Skip sync if content change came from sync operation
                 if (source === 'sync') return;
                 
-                this.debouncedSync('markdown-to-wysiwyg', () => {
-                    // Skip sync if composition is active in markdown view
-                    if (this.markdownView.isComposing()) {
-                        return;
-                    }
-                    
-                    if (this.wysiwygView && this.activeViews.has('wysiwyg') && !this.isSyncing) {
-                        this.isSyncing = true;
-                        this.wysiwygView.updateContent(content, { preserveHistory: true, source: 'sync' });
-                        this.isSyncing = false;
-                    }
-                });
+                // Skip sync if composition is active in markdown view
+                if (this.markdownView.isComposing()) {
+                    return;
+                }
+                
+                if (this.wysiwygView && this.activeViews.has('wysiwyg') && !this.isSyncing) {
+                    this.isSyncing = true;
+                    this.wysiwygView.updateContent(content, { preserveHistory: true, source: 'sync' });
+                    this.isSyncing = false;
+                }
             };
         }
-    }
-    
-    debouncedSync(key, callback) {
-        // Clear existing timeout
-        if (this.syncTimeouts.has(key)) {
-            clearTimeout(this.syncTimeouts.get(key));
-        }
-        
-        // Set new timeout for debounced sync
-        const timeout = setTimeout(() => {
-            callback();
-            this.syncTimeouts.delete(key);
-        }, 150); // 150ms debounce
-        
-        this.syncTimeouts.set(key, timeout);
     }
     
     setupViewListeners() {

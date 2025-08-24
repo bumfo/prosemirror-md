@@ -26,7 +26,6 @@ class MenuView {
         
         // Store last update state to prevent unnecessary updates
         this.lastUpdateState = null;
-        this.updateTimeout = null;
         
         this.update();
     }
@@ -69,14 +68,8 @@ class MenuView {
     }
     
     update() {
-        // Debounce updates to prevent excessive DOM manipulation
-        if (this.updateTimeout) {
-            clearTimeout(this.updateTimeout);
-        }
-        
-        this.updateTimeout = setTimeout(() => {
-            this.doUpdate();
-        }, 50); // Slower updates to reduce flickering
+        // Update immediately for responsive feedback
+        this.doUpdate();
     }
     
     doUpdate() {
@@ -123,9 +116,14 @@ class MenuView {
         const parentType = $from.parent.type.name;
         
         if (empty) {
-            // For collapsed selections, only track parent node type
-            // Don't track cursor position to avoid flickering during navigation
-            return `collapsed-${parentType}`;
+            // For collapsed selections, track both stored marks and position marks
+            let markTypes;
+            if (state.storedMarks) {
+                markTypes = state.storedMarks.map(mark => mark.type.name).sort().join(',');
+            } else {
+                markTypes = $from.marks().map(mark => mark.type.name).sort().join(',');
+            }
+            return `collapsed-${parentType}-${markTypes}`;
         } else {
             // For selections, track marks that are present in the selection
             const markTypes = [];
@@ -145,10 +143,6 @@ class MenuView {
     }
     
     destroy() {
-        if (this.updateTimeout) {
-            clearTimeout(this.updateTimeout);
-            this.updateTimeout = null;
-        }
         this.dom.remove();
     }
 }
@@ -174,21 +168,29 @@ function menuItem(icon, title, command, isActive = null, shortcut = null) {
 
 // Helper function to check if a mark is active
 function markActive(markType) {
+    // Capture markType in closure to avoid reference issues
+    const type = markType;
     return (state) => {
         const { from, to, empty } = state.selection;
         
-        // Only show active state when there's actual selected content with the mark
         if (empty) {
-            return false; // No active state for collapsed selections
+            // For collapsed selections, check both stored marks and position marks
+            const $from = state.doc.resolve(from);
+            if (state.storedMarks) {
+                // Explicitly stored marks exist (user toggled something)
+                return !!type.isInSet(state.storedMarks);
+            } else {
+                // No explicit stored marks, check position marks
+                return !!type.isInSet($from.marks());
+            }
         }
         
         // For non-empty selections, check if any part of the range has the mark
-        // Using a more permissive check - if any part of selection has the mark, show as active
         let hasMarkInRange = false;
         state.doc.nodesBetween(from, to, (node, pos) => {
             if (node.isText) {
                 for (let mark of node.marks) {
-                    if (mark.type === markType) {
+                    if (mark.type === type) {
                         hasMarkInRange = true;
                         return false; // Stop iteration
                     }
