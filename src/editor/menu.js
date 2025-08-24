@@ -559,11 +559,7 @@ export function createMenuItems(schema) {
                 'Mod-`'
             ),
             menuItem(
-                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                '<path d="M10 13.5647C10 15.2216 8.65685 16.5647 7 16.5647C5.34315 16.5647 4 15.2216 4 13.5647C4 11.9078 5.34315 10.5647 7 10.5647C8.65685 10.5647 10 11.9078 10 13.5647Z" stroke="black" stroke-width="2"/>\n' +
-                '<path d="M20 11.5647C20 13.2216 18.6569 14.5647 17 14.5647C15.3431 14.5647 14 13.2216 14 11.5647C14 9.90785 15.3431 8.5647 17 8.5647C18.6569 8.5647 20 9.90785 20 11.5647Z" stroke="black" stroke-width="2"/>\n' +
-                '<path d="M10 13.5647L14 11.5647" stroke="black" stroke-width="2" stroke-linecap="round"/>\n' +
-                '</svg>',
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25"><path d="M10.55,14.01c-1.64-1.64-1.64-4.21,0-5.85l4.39-4.39c.73-.73,1.78-1.16,2.88-1.16s2.14.42,2.88,1.16l.1.1c1.53,1.53,1.53,4.22,0,5.75l-1.53,1.53" style="fill:none; stroke:#000; stroke-linecap:square; stroke-linejoin:round; stroke-width:2px;"/><path d="M14.12,10.44c.83.76,1.27,1.8,1.27,2.89s-.44,2.13-1.23,2.93l-5.1,5.1c-.73.73-1.78,1.16-2.88,1.16s-2.14-.42-2.88-1.16l-.1-.1c-1.53-1.53-1.53-4.22,0-5.75l2.25-2.25" style="fill:none; stroke:#000; stroke-linecap:square; stroke-linejoin:round; stroke-width:2px;"/></svg>',
                 'Link',
                 linkCommand(schema.marks.link),
                 markActive(schema.marks.link),
@@ -667,7 +663,7 @@ export function createMenuItems(schema) {
             ),
             menuItem(
                 '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                '<path d="M3 12.5647H21" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '<path d="M3 12.5647H21" stroke="black" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"/>\n' +
                 '</svg>',
                 'Horizontal rule',
                 (state, dispatch) => {
