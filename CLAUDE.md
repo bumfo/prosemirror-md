@@ -340,7 +340,7 @@ Key visual elements that match markdown rendering:
 ### Automatic Deployment
 
 The project includes GitHub Actions configuration for automatic deployment:
-- **Base Path**: `/codemirror-md/prosemirror-md/` (configured in `vite.config.js`)
+- **Base Path**: `/prosemirror-md/` (configured in `vite.config.js`)
 - **Build Command**: `npm run build:gh-pages`
 - **Deploy Target**: `dist/` directory
 

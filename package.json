@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:gh-pages": "vite build --base=/codemirror-md/prosemirror-md/",
+    "build:gh-pages": "vite build --base=/prosemirror-md/",
     "deploy": "npm run build:gh-pages"
   },
   "dependencies": {

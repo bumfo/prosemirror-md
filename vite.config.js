@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     // Base path for GitHub Pages deployment
-    base: '/codemirror-md/prosemirror-md/',
+    base: '/prosemirror-md/',
     
     // Build configuration
     build: {
