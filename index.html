@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProseMirror Markdown Editor</title>
+    
+    <!-- Import Map for ProseMirror Dependencies -->
+    <script type="importmap">
+    {
+        "imports": {
+            "prosemirror-state": "./node_modules/prosemirror-state/dist/index.js",
+            "prosemirror-view": "./node_modules/prosemirror-view/dist/index.js",
+            "prosemirror-model": "./node_modules/prosemirror-model/dist/index.js",
+            "prosemirror-markdown": "./node_modules/prosemirror-markdown/dist/index.js",
+            "prosemirror-schema-basic": "./node_modules/prosemirror-schema-basic/dist/index.js",
+            "prosemirror-schema-list": "./node_modules/prosemirror-schema-list/dist/index.js",
+            "prosemirror-example-setup": "./node_modules/prosemirror-example-setup/dist/index.js",
+            "prosemirror-keymap": "./node_modules/prosemirror-keymap/dist/index.js",
+            "prosemirror-commands": "./node_modules/prosemirror-commands/dist/index.js",
+            "prosemirror-history": "./node_modules/prosemirror-history/dist/index.js",
+            "prosemirror-inputrules": "./node_modules/prosemirror-inputrules/dist/index.js",
+            "prosemirror-dropcursor": "./node_modules/prosemirror-dropcursor/dist/index.js",
+            "prosemirror-gapcursor": "./node_modules/prosemirror-gapcursor/dist/index.js",
+            "prosemirror-menu": "./node_modules/prosemirror-menu/dist/index.js",
+            "markdown-it": "./node_modules/markdown-it/dist/markdown-it.min.js"
+        }
+    }
+    </script>
+    
+    <!-- Modulepreload for Performance -->
+    <link rel="modulepreload" href="./node_modules/prosemirror-state/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-view/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-model/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-markdown/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-schema-basic/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-schema-list/dist/index.js">
+    <link rel="modulepreload" href="./node_modules/prosemirror-example-setup/dist/index.js">
+    <link rel="modulepreload" href="./src/main.js">
+    
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>ProseMirror Markdown Editor</h1>
+            <div class="mode-switcher">
+                <label>
+                    <input type="radio" name="mode" value="wysiwyg" checked>
+                    WYSIWYG
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="markdown">
+                    Markdown
+                </label>
+            </div>
+        </header>
+        
+        <main class="main">
+            <div id="editor" class="editor-container"></div>
+        </main>
+    </div>
+
+    <!-- Initial Content (Hidden) -->
+    <textarea id="initial-content" style="display: none"># Welcome to ProseMirror Markdown Editor
+
+This is a **rich text editor** built with ProseMirror that supports bidirectional conversion between WYSIWYG and markdown modes.
+
+## Features
+
+- Seamless switching between WYSIWYG and markdown views
+- Real-time markdown parsing and serialization
+- Full ProseMirror editing capabilities
+- Extensible plugin architecture
+
+### Try it out:
+
+1. Edit this content in WYSIWYG mode
+2. Switch to markdown mode to see the raw markdown
+3. Make changes in markdown mode
+4. Switch back to see the rendered result
+
+> This is a blockquote with **bold** and *italic* text.
+
+- Bullet point one
+- Bullet point two
+  - Nested item
+- Bullet point three
+
+```javascript
+// Code blocks are supported too
+function hello() {
+    console.log("Hello, ProseMirror!");
+}
+```
+
+[Learn more about ProseMirror](https://prosemirror.net/)
+</textarea>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

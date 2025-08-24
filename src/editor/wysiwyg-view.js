@@ -1,0 +1,152 @@
+import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { exampleSetup } from 'prosemirror-example-setup';
+import { markdownSchema } from '../markdown/schema.js';
+import { parseMarkdown } from '../markdown/parser.js';
+import { serializeMarkdown } from '../markdown/serializer.js';
+
+/**
+ * ProseMirror-based WYSIWYG view for markdown editing
+ * Provides rich text editing with markdown serialization
+ */
+export class ProseMirrorView {
+    constructor(target, content = '') {
+        this.target = target;
+        this.view = null;
+        this.init(content);
+    }
+    
+    init(content) {
+        // Clear the target container
+        this.target.innerHTML = '';
+        
+        // Parse initial markdown content
+        let doc;
+        try {
+            doc = parseMarkdown(content || '# Welcome\n\nStart editing...');
+        } catch (error) {
+            console.warn('Failed to parse markdown, using default:', error);
+            doc = markdownSchema.node('doc', null, [
+                markdownSchema.node('heading', { level: 1 }, [markdownSchema.text('Welcome')]),
+                markdownSchema.node('paragraph', null, [markdownSchema.text('Start editing...')])
+            ]);
+        }
+        
+        // Create editor state
+        const state = EditorState.create({
+            doc,
+            plugins: [
+                ...exampleSetup({ 
+                    schema: markdownSchema,
+                    menuBar: true,
+                    history: true,
+                    floatingMenu: false
+                }),
+                // Add custom styling plugin for markdown-like appearance
+                this.createMarkdownStylingPlugin()
+            ]
+        });
+        
+        // Create editor view
+        this.view = new EditorView(this.target, {
+            state,
+            // Custom node views for enhanced markdown editing
+            nodeViews: this.getNodeViews(),
+            // Handle various editor events
+            dispatchTransaction: this.dispatchTransaction.bind(this)
+        });
+        
+        // Add CSS class for styling
+        this.target.classList.add('prosemirror-wysiwyg');
+    }
+    
+    createMarkdownStylingPlugin() {
+        // Plugin to make the WYSIWYG view look more like rendered markdown
+        return new Plugin({
+            key: new PluginKey('markdownStyling'),
+            props: {
+                attributes: {
+                    class: 'markdown-wysiwyg'
+                }
+            }
+        });
+    }
+    
+    getNodeViews() {
+        return {
+            // Custom node views can be added here for special rendering
+            // For example, custom image rendering, code block syntax highlighting, etc.
+        };
+    }
+    
+    dispatchTransaction(transaction) {
+        const newState = this.view.state.apply(transaction);
+        this.view.updateState(newState);
+        
+        // Emit custom events for content changes
+        if (transaction.docChanged) {
+            this.target.dispatchEvent(new CustomEvent('content-changed', {
+                detail: { content: this.getContent() }
+            }));
+        }
+    }
+    
+    getContent() {
+        if (!this.view) return '';
+        
+        try {
+            return serializeMarkdown(this.view.state.doc);
+        } catch (error) {
+            console.error('Failed to serialize document:', error);
+            return '';
+        }
+    }
+    
+    setContent(content) {
+        if (!this.view) return;
+        
+        try {
+            const doc = parseMarkdown(content);
+            const state = EditorState.create({
+                doc,
+                plugins: this.view.state.plugins
+            });
+            this.view.updateState(state);
+        } catch (error) {
+            console.error('Failed to parse and set content:', error);
+        }
+    }
+    
+    focus() {
+        if (this.view) {
+            this.view.focus();
+        }
+    }
+    
+    destroy() {
+        if (this.view) {
+            this.view.destroy();
+            this.view = null;
+        }
+        this.target.classList.remove('prosemirror-wysiwyg');
+    }
+    
+    // Get the underlying ProseMirror view for advanced usage
+    getProseMirrorView() {
+        return this.view;
+    }
+    
+    // Get current document as ProseMirror node
+    getDocument() {
+        return this.view ? this.view.state.doc : null;
+    }
+    
+    // Execute a command
+    executeCommand(command) {
+        if (this.view && command) {
+            return command(this.view.state, this.view.dispatch, this.view);
+        }
+        return false;
+    }
+}
+
