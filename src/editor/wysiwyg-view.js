@@ -1,9 +1,14 @@
 import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
-import { exampleSetup } from 'prosemirror-example-setup';
+import { history } from 'prosemirror-history';
+import { keymap } from 'prosemirror-keymap';
+import { baseKeymap } from 'prosemirror-commands';
+import { dropCursor } from 'prosemirror-dropcursor';
+import { gapCursor } from 'prosemirror-gapcursor';
 import { markdownSchema } from '../markdown/schema.js';
 import { parseMarkdown } from '../markdown/parser.js';
 import { serializeMarkdown } from '../markdown/serializer.js';
+import { menuPlugin } from './menu.js';
 
 /**
  * ProseMirror-based WYSIWYG view for markdown editing
@@ -32,17 +37,20 @@ export class ProseMirrorView {
             ]);
         }
         
-        // Create editor state
+        // Create editor state with custom plugins
         const state = EditorState.create({
             doc,
             plugins: [
-                ...exampleSetup({ 
-                    schema: markdownSchema,
-                    menuBar: true,
-                    history: true,
-                    floatingMenu: false
-                }),
-                // Add custom styling plugin for markdown-like appearance
+                // Core editing plugins
+                history(),
+                keymap(baseKeymap),
+                dropCursor(),
+                gapCursor(),
+                
+                // Custom menu plugin
+                menuPlugin(markdownSchema),
+                
+                // Custom styling plugin for markdown-like appearance
                 this.createMarkdownStylingPlugin()
             ]
         });
