@@ -96,13 +96,16 @@ export class ProseMirrorView {
         
         // Emit custom events for content changes
         if (transaction.docChanged) {
+            // Get source from transaction metadata
+            const source = transaction.getMeta('source');
+            
             // Call content change callback if set
             if (this.onContentChange && typeof this.onContentChange === 'function') {
-                this.onContentChange(this.getContent());
+                this.onContentChange(this.getContent(), source);
             }
             
             this.target.dispatchEvent(new CustomEvent('content-changed', {
-                detail: { content: this.getContent() }
+                detail: { content: this.getContent(), source }
             }));
         }
     }
@@ -143,6 +146,12 @@ export class ProseMirrorView {
                 // Replace the entire document while preserving history
                 const tr = this.view.state.tr;
                 tr.replaceWith(0, this.view.state.doc.content.size, doc.content);
+                
+                // Add source metadata to prevent feedback loops
+                if (options.source) {
+                    tr.setMeta('source', options.source);
+                }
+                
                 this.view.dispatch(tr);
             } else {
                 // Create new state (this will reset history)
@@ -187,6 +196,11 @@ export class ProseMirrorView {
             return command(this.view.state, this.view.dispatch, this.view);
         }
         return false;
+    }
+    
+    // Check if composition is active (for IME input)
+    isComposing() {
+        return this.view ? this.view.composing : false;
     }
 }
 

@@ -446,17 +446,17 @@ body {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-    /* Stack views vertically on tablets/mobile instead of side-by-side */
+    /* Stack views vertically on tablets instead of side-by-side */
     .editor-container.editor-split {
         grid-template-columns: 1fr;
         grid-template-rows: 1fr 1fr;
         gap: 1px;
-        max-height: 80vh;
+        /* Remove max-height constraint to allow natural expansion */
     }
     
     .editor-pane {
-        min-height: 300px;
-        max-height: 40vh;
+        min-height: 400px; /* Increase minimum height */
+        /* Remove max-height to allow natural content flow */
     }
     
     .editor-pane.wysiwyg-pane {
@@ -480,21 +480,23 @@ body {
         max-width: none;
         margin: 0;
         border-radius: 4px;
+        min-height: 500px; /* Maintain minimum height on mobile */
     }
     
     .editor-container.editor-split {
         border-radius: 4px;
-        max-height: 70vh;
+        /* Remove max-height constraint */
     }
     
     .editor-pane {
-        min-height: 200px;
-        max-height: 35vh;
+        min-height: 300px; /* Reasonable minimum for mobile */
+        /* Remove max-height to prevent sudden height changes */
     }
     
     .ProseMirror, .markdown-textarea {
         padding: 1rem;
         font-size: 16px; /* Prevent zoom on iOS */
+        min-height: 300px; /* Ensure sufficient editing space */
     }
     
     .mode-switcher {

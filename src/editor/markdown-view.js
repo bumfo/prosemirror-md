@@ -6,6 +6,7 @@ export class MarkdownView {
     constructor(target, content = '') {
         this.target = target;
         this.textarea = null;
+        this.composing = false;
         this.init(content);
     }
     
@@ -36,10 +37,10 @@ export class MarkdownView {
     
     setupEventListeners() {
         // Auto-resize on input
-        this.textarea.addEventListener('input', () => {
+        this.textarea.addEventListener('input', (e) => {
             this.updateHeight();
             
-            // Call content change callback if set
+            // Call content change callback if set (without source parameter for user input)
             if (this.onContentChange && typeof this.onContentChange === 'function') {
                 this.onContentChange(this.getContent());
             }
@@ -51,6 +52,15 @@ export class MarkdownView {
                 e.preventDefault();
                 this.insertTab();
             }
+        });
+        
+        // Track composition events for IME
+        this.textarea.addEventListener('compositionstart', () => {
+            this.composing = true;
+        });
+        
+        this.textarea.addEventListener('compositionend', () => {
+            this.composing = false;
         });
     }
     
@@ -89,7 +99,14 @@ export class MarkdownView {
                 // Adjust position if content length has changed
                 const newLength = content.length;
                 const adjustedPosition = Math.min(currentPosition, newLength);
-                this.setCursorPosition(adjustedPosition);
+                // Don't focus when restoring cursor during sync operations
+                const shouldFocus = !options.source;
+                this.setCursorPosition(adjustedPosition, shouldFocus);
+            }
+            
+            // If this is a programmatic change (from sync), call callback with source
+            if (options.source && this.onContentChange && typeof this.onContentChange === 'function') {
+                this.onContentChange(this.getContent(), options.source);
             }
         }
     }
@@ -113,10 +130,17 @@ export class MarkdownView {
     }
     
     // Set cursor position
-    setCursorPosition(position) {
+    setCursorPosition(position, shouldFocus = true) {
         if (this.textarea) {
             this.textarea.selectionStart = this.textarea.selectionEnd = position;
-            this.textarea.focus();
+            if (shouldFocus) {
+                this.textarea.focus();
+            }
         }
+    }
+    
+    // Check if composition is active (for IME input)
+    isComposing() {
+        return this.composing;
     }
 }

@@ -69,11 +69,19 @@ class EditorManager {
     setupSyncListeners() {
         // WYSIWYG → Markdown sync
         if (this.wysiwygView) {
-            this.wysiwygView.onContentChange = (content) => {
+            this.wysiwygView.onContentChange = (content, source) => {
+                // Skip sync if content change came from sync operation
+                if (source === 'sync') return;
+                
                 this.debouncedSync('wysiwyg-to-markdown', () => {
+                    // Skip sync if composition is active in WYSIWYG view
+                    if (this.wysiwygView.isComposing()) {
+                        return;
+                    }
+                    
                     if (this.markdownView && this.activeViews.has('markdown') && !this.isSyncing) {
                         this.isSyncing = true;
-                        this.markdownView.setContent(content, { preserveCursor: true });
+                        this.markdownView.setContent(content, { preserveCursor: true, source: 'sync' });
                         this.isSyncing = false;
                     }
                 });
@@ -82,11 +90,19 @@ class EditorManager {
         
         // Markdown → WYSIWYG sync
         if (this.markdownView) {
-            this.markdownView.onContentChange = (content) => {
+            this.markdownView.onContentChange = (content, source) => {
+                // Skip sync if content change came from sync operation
+                if (source === 'sync') return;
+                
                 this.debouncedSync('markdown-to-wysiwyg', () => {
+                    // Skip sync if composition is active in markdown view
+                    if (this.markdownView.isComposing()) {
+                        return;
+                    }
+                    
                     if (this.wysiwygView && this.activeViews.has('wysiwyg') && !this.isSyncing) {
                         this.isSyncing = true;
-                        this.wysiwygView.updateContent(content, { preserveHistory: true });
+                        this.wysiwygView.updateContent(content, { preserveHistory: true, source: 'sync' });
                         this.isSyncing = false;
                     }
                 });

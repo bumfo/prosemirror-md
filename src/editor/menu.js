@@ -24,6 +24,10 @@ class MenuView {
         // Handle menu item clicks
         this.dom.addEventListener('mousedown', this.handleClick.bind(this));
         
+        // Store last update state to prevent unnecessary updates
+        this.lastUpdateState = null;
+        this.updateTimeout = null;
+        
         this.update();
     }
     
@@ -65,25 +69,86 @@ class MenuView {
     }
     
     update() {
+        // Debounce updates to prevent excessive DOM manipulation
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+        }
+        
+        this.updateTimeout = setTimeout(() => {
+            this.doUpdate();
+        }, 50); // Slower updates to reduce flickering
+    }
+    
+    doUpdate() {
         const state = this.editorView.state;
+        
+        // Create a state signature to avoid unnecessary updates
+        const stateSignature = this.createStateSignature(state);
+        if (stateSignature === this.lastUpdateState) {
+            return; // No need to update
+        }
+        this.lastUpdateState = stateSignature;
         
         for (const group of this.items) {
             for (const item of group) {
                 if (item.command) {
                     // Check if command is applicable (without dispatching)
                     const enabled = item.command(state, null, this.editorView);
-                    item.dom.classList.toggle('disabled', !enabled);
+                    const wasDisabled = item.dom.classList.contains('disabled');
+                    const shouldDisable = !enabled;
+                    
+                    if (wasDisabled !== shouldDisable) {
+                        item.dom.classList.toggle('disabled', shouldDisable);
+                    }
                     
                     // Check if mark/block is currently active
                     if (item.isActive) {
-                        item.dom.classList.toggle('active', item.isActive(state));
+                        const wasActive = item.dom.classList.contains('active');
+                        const shouldBeActive = item.isActive(state);
+                        
+                        if (wasActive !== shouldBeActive) {
+                            item.dom.classList.toggle('active', shouldBeActive);
+                        }
                     }
                 }
             }
         }
     }
     
+    createStateSignature(state) {
+        const { from, to, empty } = state.selection;
+        
+        // Include the parent node type for block-level context
+        const $from = state.doc.resolve(from);
+        const parentType = $from.parent.type.name;
+        
+        if (empty) {
+            // For collapsed selections, only track parent node type
+            // Don't track cursor position to avoid flickering during navigation
+            return `collapsed-${parentType}`;
+        } else {
+            // For selections, track marks that are present in the selection
+            const markTypes = [];
+            state.doc.nodesBetween(from, to, (node) => {
+                if (node.isText) {
+                    for (let mark of node.marks) {
+                        if (!markTypes.includes(mark.type.name)) {
+                            markTypes.push(mark.type.name);
+                        }
+                    }
+                }
+            });
+            const marksSignature = markTypes.sort().join(',');
+            
+            return `${from}-${to}-${marksSignature}-${parentType}`;
+        }
+    }
+    
     destroy() {
+        if (this.updateTimeout) {
+            clearTimeout(this.updateTimeout);
+            this.updateTimeout = null;
+        }
         this.dom.remove();
     }
 }
@@ -110,9 +175,28 @@ function menuItem(icon, title, command, isActive = null, shortcut = null) {
 // Helper function to check if a mark is active
 function markActive(markType) {
     return (state) => {
-        const { from, $from, to, empty } = state.selection;
-        if (empty) return markType.isInSet(state.storedMarks || $from.marks());
-        return state.doc.rangeHasMark(from, to, markType);
+        const { from, to, empty } = state.selection;
+        
+        // Only show active state when there's actual selected content with the mark
+        if (empty) {
+            return false; // No active state for collapsed selections
+        }
+        
+        // For non-empty selections, check if any part of the range has the mark
+        // Using a more permissive check - if any part of selection has the mark, show as active
+        let hasMarkInRange = false;
+        state.doc.nodesBetween(from, to, (node, pos) => {
+            if (node.isText) {
+                for (let mark of node.marks) {
+                    if (mark.type === markType) {
+                        hasMarkInRange = true;
+                        return false; // Stop iteration
+                    }
+                }
+            }
+        });
+        
+        return hasMarkInRange;
     };
 }
 
