@@ -583,27 +583,21 @@ export function createMenuItems(schema) {
                 'Mod-Alt-0'
             ),
             menuItem(
-                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M15 4.5647V20.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
-                '</svg>',
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25"><defs><style>.cls-1{stroke-miterlimit:10;}.cls-1,.cls-2{fill:none;stroke:#000;stroke-linecap:round;stroke-width:2px;}.cls-2{stroke-linejoin:round;}</style></defs><g id="H"><line class="cls-1" x1="2.11" y1="12.08" x2="2.11" y2="3.62"/><line class="cls-1" x1="13.05" y1="12.08" x2="13.05" y2="21.45"/><polyline class="cls-2" points="13.05 3.62 13.05 12.08 2.11 12.08 2.11 21.45"/></g><g id="_1"><polyline class="cls-2" points="17.77 14.26 19.65 13.25 19.89 13.25 19.89 21.45"/></g></svg>',
                 'Heading 1',
                 setBlockType(schema.nodes.heading, { level: 1 }),
                 blockActive(schema.nodes.heading, { level: 1 }),
                 'Mod-Alt-1'
             ),
             menuItem(
-                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M14 8.5647C14 7.46013 14.8954 6.5647 16 6.5647C17.1046 6.5647 18 7.46013 18 8.5647C18 9.66927 17.1046 10.5647 16 10.5647H14V12.5647H18M16 16.5647H16.01" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
-                '</svg>',
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25"><defs><style>.cls-1{stroke-miterlimit:10;}.cls-1,.cls-2{fill:none;stroke:#000;stroke-linecap:round;stroke-width:2px;}.cls-2{stroke-linejoin:round;}</style></defs><g id="H"><line class="cls-1" x1="2.11" y1="12.08" x2="2.11" y2="3.62"/><line class="cls-1" x1="13.05" y1="12.08" x2="13.05" y2="21.45"/><polyline class="cls-2" points="13.05 3.62 13.05 12.08 2.11 12.08 2.11 21.45"/></g><g id="_2"><path class="cls-2" d="M21.86,21.05h-4.71v-.16l.79-.77c2.24-2.13,3.3-3.3,3.32-4.77,0-1.3-.78-2.07-2.09-2.07-.68,0-1.26.26-1.67.52"/></g></svg>',
                 'Heading 2',
                 setBlockType(schema.nodes.heading, { level: 2 }),
                 blockActive(schema.nodes.heading, { level: 2 }),
                 'Mod-Alt-2'
             ),
             menuItem(
-                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M14 6.5647H18M14 10.5647H16C17.1046 10.5647 18 11.46 18 12.5647C18 13.6693 17.1046 14.5647 16 14.5647H14M14 18.5647H18" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
-                '</svg>',
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25"><defs><style>.cls-1{stroke-miterlimit:10;}.cls-1,.cls-2{fill:none;stroke:#000;stroke-linecap:round;stroke-width:2px;}.cls-2{stroke-linejoin:round;}</style></defs><g id="H"><line class="cls-1" x1="2.11" y1="12.08" x2="2.11" y2="3.62"/><line class="cls-1" x1="13.05" y1="12.08" x2="13.05" y2="21.45"/><polyline class="cls-2" points="13.05 3.62 13.05 12.08 2.11 12.08 2.11 21.45"/></g><g id="_3"><path class="cls-2" d="M18.38,16.91h.29c1.13,0,2.27-.62,2.27-1.81,0-.76-.49-1.65-1.86-1.65-.56,0-1.11.18-1.53.4"/><line class="cls-2" x1="18.38" y1="16.91" x2="18.38" y2="16.91"/><path class="cls-2" d="M17.24,20.61c.42.19,1.04.39,1.71.39.93,0,1.47-.35,1.75-.64.35-.36.55-.87.54-1.39-.01-1.24-1.05-2.07-2.58-2.07h-.29"/></g></svg>',
                 'Heading 3',
                 setBlockType(schema.nodes.heading, { level: 3 }),
                 blockActive(schema.nodes.heading, { level: 3 }),
