@@ -8,7 +8,7 @@ import { gapCursor } from 'prosemirror-gapcursor';
 import { markdownSchema } from '../markdown/schema.js';
 import { parseMarkdown } from '../markdown/parser.js';
 import { serializeMarkdown } from '../markdown/serializer.js';
-import { menuPlugin } from './menu.js';
+import { menuPlugin, createKeymap } from './menu.js';
 
 /**
  * ProseMirror-based WYSIWYG view for markdown editing
@@ -46,6 +46,9 @@ export class ProseMirrorView {
                 keymap(baseKeymap),
                 dropCursor(),
                 gapCursor(),
+                
+                // Custom keyboard shortcuts
+                createKeymap(markdownSchema),
                 
                 // Custom menu plugin
                 menuPlugin(markdownSchema),

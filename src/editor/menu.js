@@ -1,7 +1,8 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { toggleMark, setBlockType, wrapIn, lift } from 'prosemirror-commands';
+import { toggleMark, setBlockType, wrapIn, lift, joinUp, selectParentNode } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
+import { keymap } from 'prosemirror-keymap';
 
 /**
  * Custom menu plugin for ProseMirror markdown editing
@@ -69,9 +70,9 @@ class MenuView {
         for (const group of this.items) {
             for (const item of group) {
                 if (item.command) {
-                    // Check if command is applicable
-                    const active = item.command(state, null, this.editorView);
-                    item.dom.classList.toggle('disabled', !active);
+                    // Check if command is applicable (without dispatching)
+                    const enabled = item.command(state, null, this.editorView);
+                    item.dom.classList.toggle('disabled', !enabled);
                     
                     // Check if mark/block is currently active
                     if (item.isActive) {
@@ -87,15 +88,23 @@ class MenuView {
     }
 }
 
-// Helper function to create menu items
-function menuItem(icon, title, command, isActive = null) {
+// Helper function to create menu items with keyboard shortcuts
+function menuItem(icon, title, command, isActive = null, shortcut = null) {
     const dom = document.createElement('button');
     dom.className = 'menu-item';
     dom.innerHTML = icon;
-    dom.title = title;
     dom.type = 'button';
     
-    return { dom, command, isActive };
+    // Add title with optional keyboard shortcut
+    let fullTitle = title;
+    if (shortcut) {
+        // Format shortcut for display (Mod = Cmd/Ctrl)
+        const displayShortcut = shortcut.replace('Mod', navigator.platform.includes('Mac') ? '⌘' : 'Ctrl');
+        fullTitle = `${title} (${displayShortcut})`;
+    }
+    dom.title = fullTitle;
+    
+    return { dom, command, isActive, shortcut };
 }
 
 // Helper function to check if a mark is active
@@ -159,27 +168,31 @@ export function createMenuItems(schema) {
         [
             menuItem(
                 '<strong>B</strong>',
-                'Bold (Ctrl+B)',
+                'Bold',
                 toggleMark(schema.marks.strong),
-                markActive(schema.marks.strong)
+                markActive(schema.marks.strong),
+                'Mod-b'
             ),
             menuItem(
                 '<em>I</em>',
-                'Italic (Ctrl+I)',
+                'Italic',
                 toggleMark(schema.marks.em),
-                markActive(schema.marks.em)
+                markActive(schema.marks.em),
+                'Mod-i'
             ),
             menuItem(
                 '<code>`</code>',
-                'Code (Ctrl+`)',
+                'Code',
                 toggleMark(schema.marks.code),
-                markActive(schema.marks.code)
+                markActive(schema.marks.code),
+                'Mod-`'
             ),
             menuItem(
                 '🔗',
-                'Link (Ctrl+K)',
+                'Link',
                 linkCommand(schema.marks.link),
-                markActive(schema.marks.link)
+                markActive(schema.marks.link),
+                'Mod-k'
             )
         ],
         
@@ -189,25 +202,29 @@ export function createMenuItems(schema) {
                 '¶',
                 'Paragraph',
                 setBlockType(schema.nodes.paragraph),
-                blockActive(schema.nodes.paragraph)
+                blockActive(schema.nodes.paragraph),
+                'Mod-Alt-0'
             ),
             menuItem(
                 '<strong>H1</strong>',
                 'Heading 1',
                 setBlockType(schema.nodes.heading, { level: 1 }),
-                blockActive(schema.nodes.heading, { level: 1 })
+                blockActive(schema.nodes.heading, { level: 1 }),
+                'Mod-Alt-1'
             ),
             menuItem(
                 '<strong>H2</strong>',
                 'Heading 2',
                 setBlockType(schema.nodes.heading, { level: 2 }),
-                blockActive(schema.nodes.heading, { level: 2 })
+                blockActive(schema.nodes.heading, { level: 2 }),
+                'Mod-Alt-2'
             ),
             menuItem(
                 '<strong>H3</strong>',
                 'Heading 3',
                 setBlockType(schema.nodes.heading, { level: 3 }),
-                blockActive(schema.nodes.heading, { level: 3 })
+                blockActive(schema.nodes.heading, { level: 3 }),
+                'Mod-Alt-3'
             ),
             menuItem(
                 '</>',
@@ -238,17 +255,21 @@ export function createMenuItems(schema) {
         // Actions group
         [
             menuItem(
-                '↶',
-                'Undo (Ctrl+Z)',
-                undo
+                'undo',
+                'Undo',
+                undo,
+                null,
+                'Mod-z'
             ),
             menuItem(
-                '↷',
-                'Redo (Ctrl+Shift+Z)',
-                redo
+                'redo',
+                'Redo',
+                redo,
+                null,
+                'Mod-Shift-z'
             ),
             menuItem(
-                '―',
+                'horizontalRule',
                 'Horizontal rule',
                 (state, dispatch) => {
                     if (dispatch) {
@@ -258,9 +279,142 @@ export function createMenuItems(schema) {
                     }
                     return true;
                 }
+            ),
+            menuItem(
+                'image',
+                'Insert image',
+                insertImageCommand(schema)
+            ),
+            menuItem(
+                { text: '⌃⏎', css: 'font-size: 12px;' },
+                'Hard break',
+                insertHardBreakCommand(schema),
+                null,
+                'Shift-Enter'
+            ),
+            menuItem(
+                { text: '∅', css: 'font-weight: bold;' },
+                'Clear formatting',
+                clearFormattingCommand(schema),
+                null,
+                'Mod-\\'
+            ),
+            menuItem(
+                { text: '⊞', css: 'font-weight: bold;' },
+                'Insert table',
+                insertTableCommand(schema)
             )
         ]
     ];
+}
+
+// Image insertion command
+function insertImageCommand(schema) {
+    return (state, dispatch) => {
+        if (!dispatch) return true; // Just checking if command is available
+        
+        const url = prompt('Enter image URL:', 'https://');
+        if (url === null) return true; // User cancelled
+        
+        if (url) {
+            const node = schema.nodes.image ? 
+                schema.nodes.image.create({ src: url }) :
+                schema.text(`![Image](${url})`);
+            dispatch(state.tr.replaceSelectionWith(node));
+        }
+        return true;
+    };
+}
+
+// Hard break command (Shift+Enter)
+function insertHardBreakCommand(schema) {
+    return (state, dispatch) => {
+        const { $from, $to } = state.selection;
+        if ($from.parent.type.spec.code) return false; // Don't insert in code blocks
+        if (!dispatch) return true; // Just checking availability
+        
+        if (schema.nodes.hard_break) {
+            dispatch(state.tr.replaceWith($from.pos, $to.pos, schema.nodes.hard_break.create()));
+        }
+        return true;
+    };
+}
+
+// Clear formatting command
+function clearFormattingCommand(schema) {
+    return (state, dispatch) => {
+        const { from, to } = state.selection;
+        if (from === to) return false;
+        if (!dispatch) return true; // Just checking availability
+        
+        let tr = state.tr;
+        // Remove all marks from selection
+        state.doc.nodesBetween(from, to, (node, pos) => {
+            if (node.marks.length) {
+                const start = Math.max(pos, from);
+                const end = Math.min(pos + node.nodeSize, to);
+                node.marks.forEach(mark => {
+                    tr = tr.removeMark(start, end, mark);
+                });
+            }
+        });
+        dispatch(tr);
+        return true;
+    };
+}
+
+// Insert table command (basic 3x3 table)
+function insertTableCommand(schema) {
+    return (state, dispatch) => {
+        if (!dispatch) return true; // Just checking availability
+        
+        // Simple table as markdown text since basic schema doesn't support tables
+        const tableText = '| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |\n\n';
+        const node = schema.text(tableText);
+        dispatch(state.tr.replaceSelectionWith(node));
+        return true;
+    };
+}
+
+// Create keyboard shortcuts map
+export function createKeymap(schema) {
+    const keys = {};
+    
+    // Text formatting
+    keys['Mod-b'] = toggleMark(schema.marks.strong);
+    keys['Mod-i'] = toggleMark(schema.marks.em);
+    keys['Mod-`'] = toggleMark(schema.marks.code);
+    keys['Mod-k'] = linkCommand(schema.marks.link);
+    
+    // Block types
+    keys['Mod-Alt-0'] = setBlockType(schema.nodes.paragraph);
+    keys['Mod-Alt-1'] = setBlockType(schema.nodes.heading, { level: 1 });
+    keys['Mod-Alt-2'] = setBlockType(schema.nodes.heading, { level: 2 });
+    keys['Mod-Alt-3'] = setBlockType(schema.nodes.heading, { level: 3 });
+    keys['Mod-Alt-4'] = setBlockType(schema.nodes.heading, { level: 4 });
+    keys['Mod-Alt-5'] = setBlockType(schema.nodes.heading, { level: 5 });
+    keys['Mod-Alt-6'] = setBlockType(schema.nodes.heading, { level: 6 });
+    
+    // Lists and wrappers
+    keys['Mod-Shift-8'] = wrapInList(schema.nodes.bullet_list);
+    keys['Mod-Shift-7'] = wrapInList(schema.nodes.ordered_list);
+    keys['Mod-Shift-.'] = wrapIn(schema.nodes.blockquote);
+    
+    // History
+    keys['Mod-z'] = undo;
+    keys['Mod-Shift-z'] = redo;
+    keys['Mod-y'] = redo; // Alternative redo
+    
+    // List operations
+    keys['Enter'] = splitListItem(schema.nodes.list_item);
+    keys['Tab'] = sinkListItem(schema.nodes.list_item);
+    keys['Shift-Tab'] = liftListItem(schema.nodes.list_item);
+    
+    // Advanced commands
+    keys['Shift-Enter'] = insertHardBreakCommand(schema);
+    keys['Mod-\\'] = clearFormattingCommand(schema);
+    
+    return keymap(keys);
 }
 
 // Create the menu plugin
