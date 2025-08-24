@@ -299,40 +299,40 @@ body {
 /* Custom ProseMirror Menu Styling */
 .prosemirror-menu {
     border-bottom: 1px solid #e9ecef;
-    padding: 0.75rem 1rem;
+    padding: 8px 12px;
     background: #f8f9fa;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .menu-group {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 2px;
 }
 
 .menu-separator {
     width: 1px;
     height: 24px;
     background: #dee2e6;
-    margin: 0 0.25rem;
+    margin: 0 6px;
 }
 
 .menu-item {
     background: none;
     border: 1px solid transparent;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
+    padding: 6px 8px;
+    border-radius: 4px;
     cursor: pointer;
     color: #495057;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     transition: all 0.2s ease;
-    min-width: 36px;
-    height: 36px;
+    min-width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -384,27 +384,27 @@ body {
 }
 
 .menu-item[title*="Code"] {
-    font-family: monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
 }
 
 .menu-item[title*="Link"] {
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .menu-item[title*="Heading"] {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .menu-item[title*="Undo"], 
 .menu-item[title*="Redo"] {
-    font-size: 16px;
-    font-weight: normal;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .menu-item[title*="Horizontal"] {
-    font-weight: bold;
-    font-size: 18px;
+    font-weight: 600;
+    font-size: 14px;
     line-height: 1;
 }
 
@@ -509,13 +509,19 @@ body {
     }
     
     .menu-item {
-        padding: 0.4rem 0.6rem;
-        min-width: 32px;
-        height: 32px;
-        font-size: 13px;
+        padding: 4px 6px;
+        min-width: 26px;
+        height: 26px;
+        font-size: 12px;
     }
     
     .menu-separator {
-        height: 20px;
+        height: 18px;
+        margin: 0 4px;
+    }
+    
+    .prosemirror-menu {
+        padding: 6px 8px;
+        gap: 4px;
     }
 }
