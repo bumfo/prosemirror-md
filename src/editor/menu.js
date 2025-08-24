@@ -550,14 +550,20 @@ export function createMenuItems(schema) {
                 'Mod-i'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6L4 10l4 4M12 6l4 4-4 4"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M8 7.5647L4 12.5647L8 17.5647M16 7.5647L20 12.5647L16 17.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Code',
                 customToggleMark(schema.marks.code),
                 markActive(schema.marks.code),
                 'Mod-`'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 11L12 7M4 11L8 7"/><circle cx="4" cy="11" r="1.5"/><circle cx="12" cy="7" r="1.5"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M10 13.5647C10 15.2216 8.65685 16.5647 7 16.5647C5.34315 16.5647 4 15.2216 4 13.5647C4 11.9078 5.34315 10.5647 7 10.5647C8.65685 10.5647 10 11.9078 10 13.5647Z" stroke="black" stroke-width="2"/>\n' +
+                '<path d="M20 11.5647C20 13.2216 18.6569 14.5647 17 14.5647C15.3431 14.5647 14 13.2216 14 11.5647C14 9.90785 15.3431 8.5647 17 8.5647C18.6569 8.5647 20 9.90785 20 11.5647Z" stroke="black" stroke-width="2"/>\n' +
+                '<path d="M10 13.5647L14 11.5647" stroke="black" stroke-width="2" stroke-linecap="round"/>\n' +
+                '</svg>',
                 'Link',
                 linkCommand(schema.marks.link),
                 markActive(schema.marks.link),
@@ -577,28 +583,36 @@ export function createMenuItems(schema) {
                 'Mod-Alt-0'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><line x1="12" y1="16" x2="16" y2="16"/><line x1="14" y1="4" x2="14" y2="16"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M15 4.5647V20.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Heading 1',
                 setBlockType(schema.nodes.heading, { level: 1 }),
                 blockActive(schema.nodes.heading, { level: 1 }),
                 'Mod-Alt-1'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><path d="M12 6a2 2 0 0 1 4 0c0 1.5-2 2.5-4 4v2h4"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M14 8.5647C14 7.46013 14.8954 6.5647 16 6.5647C17.1046 6.5647 18 7.46013 18 8.5647C18 9.66927 17.1046 10.5647 16 10.5647H14V12.5647H18M16 16.5647H16.01" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Heading 2',
                 setBlockType(schema.nodes.heading, { level: 2 }),
                 blockActive(schema.nodes.heading, { level: 2 }),
                 'Mod-Alt-2'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><path d="M12 6h4l-2 3 2 3h-4M14 9h2"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M4 4.5647V20.5647M4 12.5647H10M10 4.5647V20.5647M14 6.5647H18M14 10.5647H16C17.1046 10.5647 18 11.46 18 12.5647C18 13.6693 17.1046 14.5647 16 14.5647H14M14 18.5647H18" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Heading 3',
                 setBlockType(schema.nodes.heading, { level: 3 }),
                 blockActive(schema.nodes.heading, { level: 3 }),
                 'Mod-Alt-3'
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4a2 2 0 0 0-2 2v2a2 2 0 0 1-2 2 2 2 0 0 1 2 2v2a2 2 0 0 0 2 2M12 4a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0-2 2v2a2 2 0 0 1-2 2"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M9 3.5647C7.89543 3.5647 7 4.46013 7 5.5647V8.5647C7 9.66927 6.10457 10.5647 5 10.5647M5 10.5647C6.10457 10.5647 7 11.46 7 12.5647V15.5647C7 16.6693 7.89543 17.5647 9 17.5647M5 10.5647C6.10457 10.5647 7 11.46 7 12.5647V15.5647C7 16.6693 7.89543 17.5647 9 17.5647M15 3.5647C16.1046 3.5647 17 4.46013 17 5.5647V8.5647C17 9.66927 17.8954 10.5647 19 10.5647M19 10.5647C17.8954 10.5647 17 11.46 17 12.5647V15.5647C17 16.6693 16.1046 17.5647 15 17.5647M19 10.5647C17.8954 10.5647 17 11.46 17 12.5647V15.5647C17 16.6693 16.1046 17.5647 15 17.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Code block',
                 setBlockType(schema.nodes.code_block)
             )
@@ -632,7 +646,9 @@ export function createMenuItems(schema) {
         // Actions group
         [
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7L7 3L7 6L17 6L17 8L7 8L7 11L3 7Z"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M3 12.5647H13M8 7.5647L3 12.5647L8 17.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Undo',
                 undo,
                 null,
@@ -644,7 +660,9 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 7L13 3L13 6L3 6L3 8L13 8L13 11L17 7Z"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M21 12.5647H11M16 7.5647L21 12.5647L16 17.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Redo',
                 redo,
                 null,
@@ -656,7 +674,9 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="10" x2="16" y2="10"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M3 12.5647H21" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Horizontal rule',
                 (state, dispatch) => {
                     if (dispatch) {
@@ -668,12 +688,19 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="10" rx="1"/><circle cx="7" cy="8" r="1.2"/><path d="M12 12L15 9"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<rect x="3" y="5.5647" width="18" height="14" rx="2" stroke="black" stroke-width="2"/>\n' +
+                '<circle cx="8.5" cy="10.5647" r="1.5" fill="black"/>\n' +
+                '<path d="M21 15.5647L16 10.5647L6 20.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Insert image',
                 insertImageCommand(schema)
             ),
             menuItem(
-                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 8L13 11M10 8L7 11M10 8V4"/></svg>',
+                '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                '<path d="M4 6.5647C4 5.46013 4.89543 4.5647 6 4.5647H18C19.1046 4.5647 20 5.46013 20 6.5647V18.5647C20 19.6693 19.1046 20.5647 18 20.5647H6C4.89543 20.5647 4 19.6693 4 18.5647V6.5647Z" stroke="black" stroke-width="2" stroke-linejoin="round"/>\n' +
+                '<path d="M9 12.5647L11 14.5647L15 10.5647" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+                '</svg>',
                 'Hard break',
                 insertHardBreakCommand(schema),
                 null,
