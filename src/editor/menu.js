@@ -12,6 +12,222 @@ import { keymap } from 'prosemirror-keymap';
 // Debug mode configuration (set to true to enable debug logging)
 const DEBUG_MENU = false;
 
+// Use original class names that match our existing CSS
+const prefix = "";
+
+/**
+ * Menu element interface - anything that can be rendered in a menu
+ * @interface MenuElement
+ */
+
+/**
+ * Icon specification - supports multiple formats
+ * @typedef {Object} IconSpec
+ * @property {string} [text] - Text-based icon content
+ * @property {string} [css] - Additional CSS for text icons
+ * @property {string} [html] - HTML content for the icon (legacy support)
+ */
+
+/**
+ * Menu item specification object
+ * @typedef {Object} MenuItemSpec
+ * @property {function} run - Command to execute when clicked
+ * @property {function} [enable] - Function to check if item should be enabled
+ * @property {function} [active] - Function to check if item should show as active
+ * @property {function} [select] - Function to check if item should be visible
+ * @property {IconSpec|string} [icon] - Icon specification or HTML string
+ * @property {string} [label] - Text label for the item
+ * @property {string|function} [title] - Tooltip text (can be function of state)
+ * @property {string} [class] - Additional CSS class
+ * @property {string} [css] - Additional CSS styles
+ */
+
+/**
+ * MenuItem class implementing the MenuElement interface
+ * Similar to prosemirror-menu's MenuItem but adapted for our needs
+ */
+class MenuItem {
+    /**
+     * Create a menu item
+     * @param {MenuItemSpec} spec - The menu item specification
+     */
+    constructor(spec) {
+        this.spec = spec;
+    }
+
+    /**
+     * Render the menu item into DOM
+     * @param {EditorView} view - The editor view
+     * @returns {Object} Object with dom and update function
+     */
+    render(view) {
+        let spec = this.spec;
+        let dom;
+
+        // Create DOM element based on icon specification
+        if (spec.icon) {
+            if (typeof spec.icon === 'string') {
+                // Legacy HTML string support
+                dom = document.createElement('button');
+                dom.innerHTML = spec.icon;
+            } else if (spec.icon.html) {
+                // HTML icon spec
+                dom = document.createElement('button');
+                dom.innerHTML = spec.icon.html;
+            } else if (spec.icon.text) {
+                // Text icon spec
+                dom = document.createElement('button');
+                dom.textContent = spec.icon.text;
+                if (spec.icon.css) {
+                    dom.style.cssText += spec.icon.css;
+                }
+            }
+        } else if (spec.label) {
+            // Text label
+            dom = document.createElement('button');
+            dom.textContent = spec.label;
+        }
+
+        if (!dom) throw new RangeError('MenuItem without icon or label property');
+
+        dom.className = 'menu-item';
+        dom.type = 'button';
+
+        // Set title/tooltip
+        if (spec.title) {
+            const title = typeof spec.title === 'function' ? spec.title(view.state) : spec.title;
+            dom.setAttribute('title', title);
+        }
+
+        // Apply additional styling
+        if (spec.class) dom.classList.add(spec.class);
+        if (spec.css) dom.style.cssText += spec.css;
+
+        // Handle click events
+        dom.addEventListener('mousedown', e => {
+            e.preventDefault();
+            // Focus the editor
+            view.focus();
+            // Check if disabled by looking at the wrapper span that will be added later
+            // For now, just run the command and let it handle its own availability
+            spec.run(view.state, view.dispatch, view, e);
+        });
+
+        /**
+         * Update function called on state changes
+         * @param {EditorState} state - Current editor state
+         * @returns {boolean} True if item should be visible
+         */
+        function update(state) {
+            // Handle visibility (select function)
+            if (spec.select) {
+                let selected = spec.select(state);
+                dom.style.display = selected ? '' : 'none';
+                if (!selected) return false;
+            }
+
+            // Handle enabled state
+            let enabled = true;
+            if (spec.enable) {
+                enabled = spec.enable(state) || false;
+                setClass(dom, 'disabled', !enabled);
+            }
+
+            // Handle active state
+            if (spec.active) {
+                let active = enabled && spec.active(state) || false;
+                setClass(dom, 'active', active);
+            }
+
+            return true;
+        }
+
+        return { dom, update };
+    }
+}
+
+/**
+ * Utility function to toggle CSS classes (IE11 compatible)
+ * @param {HTMLElement} dom - DOM element
+ * @param {string} cls - CSS class name
+ * @param {boolean} on - Whether to add or remove class
+ */
+function setClass(dom, cls, on) {
+    if (on) {
+        dom.classList.add(cls);
+    } else {
+        dom.classList.remove(cls);
+    }
+}
+
+/**
+ * Combine multiple update functions into one
+ * @param {Array<function>} updates - Array of update functions
+ * @param {Array<HTMLElement>} nodes - Array of corresponding DOM nodes
+ * @returns {function} Combined update function
+ */
+function combineUpdates(updates, nodes) {
+    return (state) => {
+        let something = false;
+        for (let i = 0; i < updates.length; i++) {
+            let up = updates[i](state);
+            nodes[i].style.display = up ? '' : 'none';
+            if (up) something = true;
+        }
+        return something;
+    };
+}
+
+/**
+ * Render grouped menu elements with separators
+ * @param {EditorView} view - Editor view
+ * @param {Array<Array<MenuElement>>} content - Nested array of menu elements
+ * @returns {Object} Object with dom and update function
+ */
+function renderGrouped(view, content) {
+    let result = document.createDocumentFragment();
+    let updates = [], separators = [];
+
+    for (let i = 0; i < content.length; i++) {
+        let items = content[i], localUpdates = [], localNodes = [];
+        
+        for (let j = 0; j < items.length; j++) {
+            let { dom, update } = items[j].render(view);
+            let span = document.createElement('span');
+            span.className = 'menu-item-wrapper';
+            span.appendChild(dom);
+            result.appendChild(span);
+            localNodes.push(span);
+            localUpdates.push(update);
+        }
+
+        if (localUpdates.length) {
+            updates.push(combineUpdates(localUpdates, localNodes));
+            if (i < content.length - 1) {
+                let separator = document.createElement('span');
+                separator.className = 'menu-separator';
+                separators.push(separator);
+                result.appendChild(separator);
+            }
+        }
+    }
+
+    function update(state) {
+        let something = false, needSep = false;
+        for (let i = 0; i < updates.length; i++) {
+            let hasContent = updates[i](state);
+            if (i && separators[i - 1]) {
+                separators[i - 1].style.display = needSep && hasContent ? '' : 'none';
+            }
+            needSep = hasContent;
+            if (hasContent) something = true;
+        }
+        return something;
+    }
+
+    return { dom: result, update };
+}
+
 class MenuView {
     constructor(items, editorView) {
         this.items = items;
@@ -21,53 +237,17 @@ class MenuView {
         this.dom = document.createElement('div');
         this.dom.className = 'prosemirror-menu';
         
-        // Create menu groups
-        this.createMenuGroups(items);
+        // Render grouped items
+        let { dom: contentDom, update: contentUpdate } = renderGrouped(editorView, items);
+        this.contentUpdate = contentUpdate;
+        this.dom.appendChild(contentDom);
         
-        // Handle menu item clicks
-        this.dom.addEventListener('mousedown', this.handleClick.bind(this));
+        // Menu items handle their own clicks now
         
         // Store last update state to prevent unnecessary updates
         this.lastUpdateState = null;
         
         this.update();
-    }
-    
-    createMenuGroups(items) {
-        items.forEach((group, groupIndex) => {
-            if (groupIndex > 0) {
-                // Add separator between groups
-                const separator = document.createElement('div');
-                separator.className = 'menu-separator';
-                this.dom.appendChild(separator);
-            }
-            
-            const groupEl = document.createElement('div');
-            groupEl.className = 'menu-group';
-            
-            group.forEach(item => {
-                groupEl.appendChild(item.dom);
-            });
-            
-            this.dom.appendChild(groupEl);
-        });
-    }
-    
-    handleClick(e) {
-        e.preventDefault();
-        this.editorView.focus();
-        
-        // Find which item was clicked
-        for (const group of this.items) {
-            for (const item of group) {
-                if (item.dom.contains(e.target)) {
-                    if (item.command) {
-                        item.command(this.editorView.state, this.editorView.dispatch, this.editorView);
-                    }
-                    return;
-                }
-            }
-        }
     }
     
     update() {
@@ -88,30 +268,8 @@ class MenuView {
         if (DEBUG_MENU) console.log('Updating menu - new state signature');
         this.lastUpdateState = stateSignature;
         
-        for (const group of this.items) {
-            for (const item of group) {
-                if (item.command) {
-                    // Check if command is enabled (use custom isEnabled if provided, otherwise use command)
-                    const enabled = item.isEnabled ? item.isEnabled(state) : item.command(state, null, this.editorView);
-                    const wasDisabled = item.dom.classList.contains('disabled');
-                    const shouldDisable = !enabled;
-                    
-                    if (wasDisabled !== shouldDisable) {
-                        item.dom.classList.toggle('disabled', shouldDisable);
-                    }
-                    
-                    // Check if mark/block is currently active
-                    if (item.isActive) {
-                        const wasActive = item.dom.classList.contains('active');
-                        const shouldBeActive = item.isActive(state);
-                        
-                        if (wasActive !== shouldBeActive) {
-                            item.dom.classList.toggle('active', shouldBeActive);
-                        }
-                    }
-                }
-            }
-        }
+        // Use the grouped content update function
+        this.contentUpdate(state);
     }
     
     createStateSignature(state) {
@@ -191,23 +349,46 @@ class MenuView {
     }
 }
 
-// Helper function to create menu items with keyboard shortcuts
+/**
+ * Helper function to create menu items with keyboard shortcuts
+ * @param {IconSpec|string} icon - Icon specification or HTML string
+ * @param {string} title - Item title
+ * @param {function} command - Command function
+ * @param {function|null} [isActive] - Active state function
+ * @param {string|null} [shortcut] - Keyboard shortcut
+ * @param {function|null} [isEnabled] - Enable state function
+ * @returns {MenuItem} Menu item instance
+ */
 function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
-    const dom = document.createElement('button');
-    dom.className = 'menu-item';
-    dom.innerHTML = icon;
-    dom.type = 'button';
-    
-    // Add title with optional keyboard shortcut
+    // Build title with optional keyboard shortcut
     let fullTitle = title;
     if (shortcut) {
         // Format shortcut for display (Mod = Cmd/Ctrl)
         const displayShortcut = shortcut.replace('Mod', navigator.platform.includes('Mac') ? '⌘' : 'Ctrl');
         fullTitle = `${title} (${displayShortcut})`;
     }
-    dom.title = fullTitle;
-    
-    return { dom, command, isActive, shortcut, isEnabled };
+
+    // Convert icon to proper spec format
+    let iconSpec;
+    if (typeof icon === 'string') {
+        iconSpec = { html: icon };
+    } else if (typeof icon === 'object' && icon.text) {
+        iconSpec = icon;
+    } else {
+        iconSpec = icon;
+    }
+
+    const spec = {
+        run: command,
+        icon: iconSpec,
+        title: fullTitle
+    };
+
+    // Add optional functions if provided
+    if (isActive) spec.active = isActive;
+    if (isEnabled) spec.enable = isEnabled;
+
+    return new MenuItem(spec);
 }
 
 // Custom toggle mark command that aligns with our active state logic

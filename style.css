@@ -308,17 +308,18 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.menu-group {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+.menu-item-wrapper {
+    margin-right: 3px;
+    display: inline-block;
 }
 
 .menu-separator {
     width: 1px;
     height: 24px;
     background: #dee2e6;
-    margin: 0 0.25rem;
+    margin: 0 0.5rem;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .menu-item {
