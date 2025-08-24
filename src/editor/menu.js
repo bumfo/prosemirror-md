@@ -130,6 +130,9 @@ function linkCommand(markType) {
     return (state, dispatch, view) => {
         if (state.selection.empty) return false;
         
+        // If dispatch is null, we're just checking if command is available
+        if (!dispatch) return true;
+        
         const { from, to } = state.selection;
         const start = state.doc.resolve(from);
         const end = state.doc.resolve(to);
@@ -147,14 +150,10 @@ function linkCommand(markType) {
         
         if (url === '') {
             // Remove link
-            if (dispatch) {
-                dispatch(state.tr.removeMark(from, to, markType));
-            }
+            dispatch(state.tr.removeMark(from, to, markType));
         } else {
             // Add/update link
-            if (dispatch) {
-                dispatch(state.tr.addMark(from, to, markType.create({ href: url })));
-            }
+            dispatch(state.tr.addMark(from, to, markType.create({ href: url })));
         }
         
         return true;
@@ -311,7 +310,8 @@ export function createMenuItems(schema) {
 // Image insertion command
 function insertImageCommand(schema) {
     return (state, dispatch) => {
-        if (!dispatch) return true; // Just checking if command is available
+        // If dispatch is null, we're just checking if command is available
+        if (!dispatch) return true;
         
         const url = prompt('Enter image URL:', 'https://');
         if (url === null) return true; // User cancelled
