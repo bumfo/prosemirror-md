@@ -532,28 +532,28 @@ export function createMenuItems(schema) {
         // Text formatting group
         [
             menuItem(
-                '<strong>B</strong>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4v12M5 4h5a2.5 2.5 0 0 1 0 5H5M5 9h6a3 3 0 0 1 0 6H5"/></svg>',
                 'Bold',
                 customToggleMark(schema.marks.strong),
                 markActive(schema.marks.strong),
                 'Mod-b'
             ),
             menuItem(
-                '<em>I</em>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="10" y1="4" x2="10" y2="16"/><line x1="7" y1="4" x2="13" y2="4"/><line x1="7" y1="16" x2="13" y2="16"/></svg>',
                 'Italic',
                 customToggleMark(schema.marks.em),
                 markActive(schema.marks.em),
                 'Mod-i'
             ),
             menuItem(
-                '<code>`</code>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6L4 10l4 4M12 6l4 4-4 4"/></svg>',
                 'Code',
                 customToggleMark(schema.marks.code),
                 markActive(schema.marks.code),
                 'Mod-`'
             ),
             menuItem(
-                '🔗',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 11L12 7M4 11L8 7"/><circle cx="4" cy="11" r="1.5"/><circle cx="12" cy="7" r="1.5"/></svg>',
                 'Link',
                 linkCommand(schema.marks.link),
                 markActive(schema.marks.link),
@@ -564,35 +564,35 @@ export function createMenuItems(schema) {
         // Block types group
         [
             menuItem(
-                '¶',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="6" x2="16" y2="6"/><line x1="10" y1="6" x2="10" y2="16"/></svg>',
                 'Paragraph',
                 setBlockType(schema.nodes.paragraph),
                 blockActive(schema.nodes.paragraph),
                 'Mod-Alt-0'
             ),
             menuItem(
-                '<strong>H1</strong>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><line x1="12" y1="16" x2="16" y2="16"/><line x1="14" y1="4" x2="14" y2="16"/></svg>',
                 'Heading 1',
                 setBlockType(schema.nodes.heading, { level: 1 }),
                 blockActive(schema.nodes.heading, { level: 1 }),
                 'Mod-Alt-1'
             ),
             menuItem(
-                '<strong>H2</strong>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><path d="M12 6a2 2 0 0 1 4 0c0 1.5-2 2.5-4 4v2h4"/></svg>',
                 'Heading 2',
                 setBlockType(schema.nodes.heading, { level: 2 }),
                 blockActive(schema.nodes.heading, { level: 2 }),
                 'Mod-Alt-2'
             ),
             menuItem(
-                '<strong>H3</strong>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="4" y2="16"/><line x1="4" y1="10" x2="9" y2="10"/><line x1="9" y1="4" x2="9" y2="16"/><path d="M12 6h4l-2 3 2 3h-4M14 9h2"/></svg>',
                 'Heading 3',
                 setBlockType(schema.nodes.heading, { level: 3 }),
                 blockActive(schema.nodes.heading, { level: 3 }),
                 'Mod-Alt-3'
             ),
             menuItem(
-                '</>',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4a2 2 0 0 0-2 2v2a2 2 0 0 1-2 2 2 2 0 0 1 2 2v2a2 2 0 0 0 2 2M12 4a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0-2 2v2a2 2 0 0 1-2 2"/></svg>',
                 'Code block',
                 setBlockType(schema.nodes.code_block)
             )
@@ -601,17 +601,17 @@ export function createMenuItems(schema) {
         // Block wrappers group
         [
             menuItem(
-                '"',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6v8l2-2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/></svg>',
                 'Blockquote',
                 wrapIn(schema.nodes.blockquote)
             ),
             menuItem(
-                '•',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="6" r="1" fill="currentColor"/><line x1="7" y1="6" x2="16" y2="6"/><circle cx="4" cy="10" r="1" fill="currentColor"/><line x1="7" y1="10" x2="16" y2="10"/><circle cx="4" cy="14" r="1" fill="currentColor"/><line x1="7" y1="14" x2="16" y2="14"/></svg>',
                 'Bullet list',
                 wrapInList(schema.nodes.bullet_list)
             ),
             menuItem(
-                '1.',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7v-1h1M4 6l1 1"/><line x1="7" y1="6" x2="16" y2="6"/><path d="M3 9h2a1 1 0 0 1 0 2H3a1 1 0 0 1 2 0"/><line x1="7" y1="10" x2="16" y2="10"/><path d="M3 13h2a1 1 0 0 1 0 2H4a1 1 0 0 0-1 1"/><line x1="7" y1="14" x2="16" y2="14"/></svg>',
                 'Ordered list',
                 wrapInList(schema.nodes.ordered_list)
             )
@@ -620,7 +620,7 @@ export function createMenuItems(schema) {
         // Actions group
         [
             menuItem(
-                'undo',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7L7 3L7 6L17 6L17 8L7 8L7 11L3 7Z"/></svg>',
                 'Undo',
                 undo,
                 null,
@@ -632,7 +632,7 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                'redo',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 7L13 3L13 6L3 6L3 8L13 8L13 11L17 7Z"/></svg>',
                 'Redo',
                 redo,
                 null,
@@ -644,7 +644,7 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                'horizontalRule',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="10" x2="16" y2="10"/></svg>',
                 'Horizontal rule',
                 (state, dispatch) => {
                     if (dispatch) {
@@ -656,26 +656,26 @@ export function createMenuItems(schema) {
                 }
             ),
             menuItem(
-                'image',
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="10" rx="1"/><circle cx="7" cy="8" r="1.2"/><path d="M12 12L15 9"/></svg>',
                 'Insert image',
                 insertImageCommand(schema)
             ),
             menuItem(
-                { text: '⌃⏎', css: 'font-size: 12px;' },
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 8L13 11M10 8L7 11M10 8V4"/></svg>',
                 'Hard break',
                 insertHardBreakCommand(schema),
                 null,
                 'Shift-Enter'
             ),
             menuItem(
-                { text: '∅', css: 'font-weight: bold;' },
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7L16 7M8 11L12 11"/><path d="M2 4L18 16" stroke-width="1.5"/></svg>',
                 'Clear formatting',
                 clearFormattingCommand(schema),
                 null,
                 'Mod-\\'
             ),
             menuItem(
-                { text: '⊞', css: 'font-weight: bold;' },
+                '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="1"/><line x1="8" y1="3" x2="8" y2="17"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="3" y1="12" x2="17" y2="12"/></svg>',
                 'Insert table',
                 insertTableCommand(schema)
             )

@@ -339,14 +339,14 @@ body {
 .menu-item {
     background: transparent;
     border: 1px solid transparent;
-    padding: 6px 8px;
+    padding: 0;
     border-radius: 4px;
     cursor: pointer;
     color: #374151;
     font-size: 13px;
     font-weight: 500;
     transition: all 0.15s ease;
-    min-width: 30px;
+    width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
