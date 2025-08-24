@@ -464,4 +464,122 @@ const menu = menuBar({
 });
 ```
 
+## Custom Mark Toggle Logic
+
+### Overview
+
+This implementation uses a custom `customToggleMark` function instead of ProseMirror's standard `toggleMark` command to provide a more intuitive user experience when working with partially formatted text selections.
+
+### Standard vs Custom Behavior
+
+#### Standard ProseMirror Behavior
+- **Active State**: Button shows active if ANY part of selection has the mark
+- **Click Action**: Removes marks from parts that have them, applies to parts that don't
+- **Result**: Often removes formatting when user expects to apply it
+
+#### Our Custom Behavior  
+- **Active State**: Button shows active only if ENTIRE selection has the mark
+- **Click Action**: Prioritizes applying marks over removing them
+- **Result**: More predictable "apply formatting" workflow
+
+### Implementation Details
+
+```javascript
+function customToggleMark(markType) {
+    return (state, dispatch, view) => {
+        const { from, to, empty } = state.selection;
+        
+        if (empty) {
+            // For collapsed cursor, use standard toggleMark behavior
+            return toggleMark(markType)(state, dispatch, view);
+        }
+        
+        // For selections, check if ENTIRE selection has the mark
+        let allTextHasMark = true;
+        let hasAnyText = false;
+        
+        state.doc.nodesBetween(from, to, (node, pos) => {
+            if (node.isText && node.text.length > 0) {
+                hasAnyText = true;
+                if (!markType.isInSet(node.marks)) {
+                    allTextHasMark = false;
+                    return false; // Stop iteration
+                }
+            }
+        });
+        
+        if (!hasAnyText) return false;
+        if (!dispatch) return true; // Just checking if command is available
+        
+        let tr = state.tr;
+        
+        if (allTextHasMark) {
+            // All text has the mark -> remove it
+            tr = tr.removeMark(from, to, markType);
+        } else {
+            // Not all text has the mark -> apply it to entire selection
+            tr = tr.addMark(from, to, markType.create());
+        }
+        
+        dispatch(tr);
+        return true;
+    };
+}
+```
+
+### Key Logic Points
+
+1. **Collapsed Cursor**: Uses standard `toggleMark` for consistency with existing ProseMirror patterns
+
+2. **Text Detection**: Only operates on actual text nodes with content, ignoring empty nodes
+
+3. **All-or-Nothing Check**: Iterates through all text in selection, stopping early if any text lacks the mark
+
+4. **State Alignment**: The behavior perfectly matches the visual active state:
+   - Inactive button → Apply mark to entire selection
+   - Active button → Remove mark from entire selection
+
+### Use Cases
+
+#### Scenario 1: Partially Bold Text
+- Selection: "Hello **world** everyone"  
+- Bold button shows: **Inactive** (not all text is bold)
+- Click action: **Applies bold** to entire selection
+- Result: "**Hello world everyone**"
+
+#### Scenario 2: Fully Bold Text  
+- Selection: "**Hello world everyone**"
+- Bold button shows: **Active** (all text is bold)
+- Click action: **Removes bold** from entire selection  
+- Result: "Hello world everyone"
+
+#### Scenario 3: Mixed Formatting
+- Selection: "**Hello** *world* `everyone`"
+- Bold button shows: **Inactive** (not all text is bold)
+- Click action: **Applies bold** to entire selection
+- Result: "***Hello* *world* `everyone`**" (other marks preserved)
+
+### Integration
+
+The custom toggle logic is applied to:
+- **Toolbar buttons**: Bold, Italic, Code buttons
+- **Keyboard shortcuts**: Cmd/Ctrl+B, Cmd/Ctrl+I, Cmd/Ctrl+`
+- **Active state detection**: `markActive` function aligned with toggle behavior
+
+### Benefits
+
+1. **Predictable UX**: Users can predict button behavior from visual state
+2. **Formatting Priority**: Encourages applying formatting over removing it  
+3. **Reduced Frustration**: No unexpected mark removal during formatting workflows
+4. **Consistent State**: Visual indicators perfectly match click actions
+
+### Technical Notes
+
+- **Performance**: Early termination when finding unmarked text optimizes large selections
+- **Transaction Safety**: Creates single transaction for entire operation
+- **Mark Preservation**: Other marks are preserved when applying new ones
+- **History Integration**: Each operation creates one undo step
+
+This custom approach trades strict ProseMirror convention for improved user experience, particularly beneficial in collaborative and educational editing contexts where users expect consistent formatting behavior.
+
 This documentation provides a comprehensive guide to understanding, developing, and extending the ProseMirror markdown editor. The modular architecture and clear separation of concerns make it easy to customize and enhance for specific use cases.

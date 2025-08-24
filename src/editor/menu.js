@@ -77,16 +77,19 @@ class MenuView {
         
         // Create a state signature to avoid unnecessary updates
         const stateSignature = this.createStateSignature(state);
+        console.log('State signature:', stateSignature);
         if (stateSignature === this.lastUpdateState) {
+            console.log('Skipping update - same state signature');
             return; // No need to update
         }
+        console.log('Updating menu - new state signature');
         this.lastUpdateState = stateSignature;
         
         for (const group of this.items) {
             for (const item of group) {
                 if (item.command) {
-                    // Check if command is applicable (without dispatching)
-                    const enabled = item.command(state, null, this.editorView);
+                    // Check if command is enabled (use custom isEnabled if provided, otherwise use command)
+                    const enabled = item.isEnabled ? item.isEnabled(state) : item.command(state, null, this.editorView);
                     const wasDisabled = item.dom.classList.contains('disabled');
                     const shouldDisable = !enabled;
                     
@@ -115,6 +118,32 @@ class MenuView {
         const $from = state.doc.resolve(from);
         const parentType = $from.parent.type.name;
         
+        // Include history state for undo/redo button updates
+        let historyState = '';
+        try {
+            // Try to get history state using the history plugin key
+            const historyPlugin = state.plugins.find(plugin => {
+                return plugin.spec && plugin.spec.key && 
+                       (plugin.spec.key === 'history' || plugin.spec.key.key === 'history');
+            });
+            
+            if (historyPlugin) {
+                const history = historyPlugin.getState(state);
+                if (history && history.done && history.undone) {
+                    historyState = `${history.done.length}-${history.undone.length}`;
+                }
+            } else {
+                // Fallback: try to detect history changes by testing undo/redo availability
+                const canUndo = undo(state);
+                const canRedo = redo(state);
+                historyState = `${canUndo ? '1' : '0'}-${canRedo ? '1' : '0'}`;
+            }
+        } catch (e) {
+            console.warn('History state detection failed:', e);
+            // Last resort: use document change count as proxy
+            historyState = `doc-${state.doc.content.size}`;
+        }
+        
         if (empty) {
             // For collapsed selections, track both stored marks and position marks
             let markTypes;
@@ -123,7 +152,7 @@ class MenuView {
             } else {
                 markTypes = $from.marks().map(mark => mark.type.name).sort().join(',');
             }
-            return `collapsed-${parentType}-${markTypes}`;
+            return `collapsed-${parentType}-${markTypes}-${historyState}`;
         } else {
             // For selections, track marks that are present throughout the ENTIRE selection
             const markTypes = new Set();
@@ -150,7 +179,7 @@ class MenuView {
             
             const marksSignature = Array.from(markTypes).sort().join(',');
             
-            return `${from}-${to}-${marksSignature}-${parentType}`;
+            return `${from}-${to}-${marksSignature}-${parentType}-${historyState}`;
         }
     }
     
@@ -160,7 +189,7 @@ class MenuView {
 }
 
 // Helper function to create menu items with keyboard shortcuts
-function menuItem(icon, title, command, isActive = null, shortcut = null) {
+function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
     const dom = document.createElement('button');
     dom.className = 'menu-item';
     dom.innerHTML = icon;
@@ -175,7 +204,7 @@ function menuItem(icon, title, command, isActive = null, shortcut = null) {
     }
     dom.title = fullTitle;
     
-    return { dom, command, isActive, shortcut };
+    return { dom, command, isActive, shortcut, isEnabled };
 }
 
 // Custom toggle mark command that aligns with our active state logic
@@ -406,14 +435,24 @@ export function createMenuItems(schema) {
                 'Undo',
                 undo,
                 null,
-                'Mod-z'
+                'Mod-z',
+                state => {
+                    const canUndo = undo(state);
+                    console.log('Undo enable check:', canUndo);
+                    return canUndo;
+                }
             ),
             menuItem(
                 'redo',
                 'Redo',
                 redo,
                 null,
-                'Mod-Shift-z'
+                'Mod-Shift-z',
+                state => {
+                    const canRedo = redo(state);
+                    console.log('Redo enable check:', canRedo);
+                    return canRedo;
+                }
             ),
             menuItem(
                 'horizontalRule',
