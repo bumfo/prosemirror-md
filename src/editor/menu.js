@@ -9,6 +9,9 @@ import { keymap } from 'prosemirror-keymap';
  * Provides a toolbar with essential markdown formatting options
  */
 
+// Debug mode configuration (set to true to enable debug logging)
+const DEBUG_MENU = false;
+
 class MenuView {
     constructor(items, editorView) {
         this.items = items;
@@ -77,12 +80,12 @@ class MenuView {
         
         // Create a state signature to avoid unnecessary updates
         const stateSignature = this.createStateSignature(state);
-        console.log('State signature:', stateSignature);
+        if (DEBUG_MENU) console.log('State signature:', stateSignature);
         if (stateSignature === this.lastUpdateState) {
-            console.log('Skipping update - same state signature');
+            if (DEBUG_MENU) console.log('Skipping update - same state signature');
             return; // No need to update
         }
-        console.log('Updating menu - new state signature');
+        if (DEBUG_MENU) console.log('Updating menu - new state signature');
         this.lastUpdateState = stateSignature;
         
         for (const group of this.items) {
@@ -139,7 +142,7 @@ class MenuView {
                 historyState = `${canUndo ? '1' : '0'}-${canRedo ? '1' : '0'}`;
             }
         } catch (e) {
-            console.warn('History state detection failed:', e);
+            if (DEBUG_MENU) console.warn('History state detection failed:', e);
             // Last resort: use document change count as proxy
             historyState = `doc-${state.doc.content.size}`;
         }
@@ -438,7 +441,7 @@ export function createMenuItems(schema) {
                 'Mod-z',
                 state => {
                     const canUndo = undo(state);
-                    console.log('Undo enable check:', canUndo);
+                    if (DEBUG_MENU) console.log('Undo enable check:', canUndo);
                     return canUndo;
                 }
             ),
@@ -450,7 +453,7 @@ export function createMenuItems(schema) {
                 'Mod-Shift-z',
                 state => {
                     const canRedo = redo(state);
-                    console.log('Redo enable check:', canRedo);
+                    if (DEBUG_MENU) console.log('Redo enable check:', canRedo);
                     return canRedo;
                 }
             ),
