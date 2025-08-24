@@ -300,8 +300,8 @@ body {
 .prosemirror-menu {
     border-bottom: 1px solid #e5e7eb;
     padding: 8px 12px;
-    background: #ffffff;
-    /*background: #f8f9fa;*/
+    /*background: #ffffff;*/
+    background: #f8f9fa;
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
