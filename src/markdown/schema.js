@@ -1,24 +1,13 @@
-import { Schema } from 'prosemirror-model';
-import { schema as basicSchema } from 'prosemirror-schema-basic';
-import { addListNodes } from 'prosemirror-schema-list';
+import { schema } from 'prosemirror-markdown';
 
 /**
- * Custom schema for markdown editing that extends the basic schema
- * with list support and markdown-specific configurations
+ * Schema for markdown editing
+ * Uses the default schema from prosemirror-markdown which is compatible
+ * with CommonMark and includes all necessary nodes and marks
  */
 
-// Extend the basic schema with list nodes
-const markdownNodes = addListNodes(
-    basicSchema.spec.nodes, 
-    "paragraph block*", 
-    "block"
-);
-
-// Custom schema that matches markdown capabilities
-export const markdownSchema = new Schema({
-    nodes: markdownNodes,
-    marks: basicSchema.spec.marks
-});
+// Use the default markdown schema from prosemirror-markdown
+export const markdownSchema = schema;
 
 // Export specific node and mark types for convenience
 export const {
