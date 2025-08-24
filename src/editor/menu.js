@@ -125,18 +125,30 @@ class MenuView {
             }
             return `collapsed-${parentType}-${markTypes}`;
         } else {
-            // For selections, track marks that are present in the selection
-            const markTypes = [];
+            // For selections, track marks that are present throughout the ENTIRE selection
+            const markTypes = new Set();
+            let firstTextNode = true;
+            
             state.doc.nodesBetween(from, to, (node) => {
-                if (node.isText) {
-                    for (let mark of node.marks) {
-                        if (!markTypes.includes(mark.type.name)) {
-                            markTypes.push(mark.type.name);
+                if (node.isText && node.text.length > 0) {
+                    const nodeMarkTypes = new Set(node.marks.map(mark => mark.type.name));
+                    
+                    if (firstTextNode) {
+                        // Initialize with marks from first text node
+                        nodeMarkTypes.forEach(markType => markTypes.add(markType));
+                        firstTextNode = false;
+                    } else {
+                        // Keep only marks that exist in ALL text nodes (intersection)
+                        for (let markType of markTypes) {
+                            if (!nodeMarkTypes.has(markType)) {
+                                markTypes.delete(markType);
+                            }
                         }
                     }
                 }
             });
-            const marksSignature = markTypes.sort().join(',');
+            
+            const marksSignature = Array.from(markTypes).sort().join(',');
             
             return `${from}-${to}-${marksSignature}-${parentType}`;
         }
@@ -166,6 +178,49 @@ function menuItem(icon, title, command, isActive = null, shortcut = null) {
     return { dom, command, isActive, shortcut };
 }
 
+// Custom toggle mark command that aligns with our active state logic
+function customToggleMark(markType) {
+    return (state, dispatch, view) => {
+        const { from, to, empty } = state.selection;
+        
+        if (empty) {
+            // For collapsed cursor, use standard toggleMark behavior
+            return toggleMark(markType)(state, dispatch, view);
+        }
+        
+        // For selections, check if ENTIRE selection has the mark
+        let allTextHasMark = true;
+        let hasAnyText = false;
+        
+        state.doc.nodesBetween(from, to, (node, pos) => {
+            if (node.isText && node.text.length > 0) {
+                hasAnyText = true;
+                if (!markType.isInSet(node.marks)) {
+                    allTextHasMark = false;
+                    return false; // Stop iteration
+                }
+            }
+        });
+        
+        if (!hasAnyText) return false;
+        
+        if (!dispatch) return true; // Just checking if command is available
+        
+        let tr = state.tr;
+        
+        if (allTextHasMark) {
+            // All text has the mark -> remove it
+            tr = tr.removeMark(from, to, markType);
+        } else {
+            // Not all text has the mark -> apply it to entire selection
+            tr = tr.addMark(from, to, markType.create());
+        }
+        
+        dispatch(tr);
+        return true;
+    };
+}
+
 // Helper function to check if a mark is active
 function markActive(markType) {
     // Capture markType in closure to avoid reference issues
@@ -185,20 +240,27 @@ function markActive(markType) {
             }
         }
         
-        // For non-empty selections, check if any part of the range has the mark
-        let hasMarkInRange = false;
+        // For non-empty selections, only show active if the ENTIRE selection has the mark
+        // This prioritizes applying marks over removing them
+        let allTextHasMark = true;
+        let hasAnyText = false;
+        
         state.doc.nodesBetween(from, to, (node, pos) => {
-            if (node.isText) {
-                for (let mark of node.marks) {
-                    if (mark.type === type) {
-                        hasMarkInRange = true;
-                        return false; // Stop iteration
-                    }
+            if (node.isText && node.text.length > 0) {
+                hasAnyText = true;
+                const nodeStart = Math.max(pos, from);
+                const nodeEnd = Math.min(pos + node.nodeSize, to);
+                
+                // Check if this text node has the mark for the selected portion
+                if (!type.isInSet(node.marks)) {
+                    allTextHasMark = false;
+                    return false; // Stop iteration
                 }
             }
         });
         
-        return hasMarkInRange;
+        // Only show active if selection has text and ALL of it has the mark
+        return hasAnyText && allTextHasMark;
     };
 }
 
@@ -254,21 +316,21 @@ export function createMenuItems(schema) {
             menuItem(
                 '<strong>B</strong>',
                 'Bold',
-                toggleMark(schema.marks.strong),
+                customToggleMark(schema.marks.strong),
                 markActive(schema.marks.strong),
                 'Mod-b'
             ),
             menuItem(
                 '<em>I</em>',
                 'Italic',
-                toggleMark(schema.marks.em),
+                customToggleMark(schema.marks.em),
                 markActive(schema.marks.em),
                 'Mod-i'
             ),
             menuItem(
                 '<code>`</code>',
                 'Code',
-                toggleMark(schema.marks.code),
+                customToggleMark(schema.marks.code),
                 markActive(schema.marks.code),
                 'Mod-`'
             ),
@@ -467,9 +529,9 @@ export function createKeymap(schema) {
     const keys = {};
     
     // Text formatting
-    keys['Mod-b'] = toggleMark(schema.marks.strong);
-    keys['Mod-i'] = toggleMark(schema.marks.em);
-    keys['Mod-`'] = toggleMark(schema.marks.code);
+    keys['Mod-b'] = customToggleMark(schema.marks.strong);
+    keys['Mod-i'] = customToggleMark(schema.marks.em);
+    keys['Mod-`'] = customToggleMark(schema.marks.code);
     keys['Mod-k'] = linkCommand(schema.marks.link);
     
     // Block types
