@@ -189,26 +189,31 @@ function renderGrouped(view, content) {
     let updates = [], separators = [];
 
     for (let i = 0; i < content.length; i++) {
+        // Add separator between groups (like original implementation)
+        if (i > 0) {
+            let separator = document.createElement('div');
+            separator.className = 'menu-separator';
+            separators.push(separator);
+            result.appendChild(separator);
+        }
+
+        // Create group container (restore original menu-group)
+        let groupEl = document.createElement('div');
+        groupEl.className = 'menu-group';
+        
         let items = content[i], localUpdates = [], localNodes = [];
         
         for (let j = 0; j < items.length; j++) {
             let { dom, update } = items[j].render(view);
-            let span = document.createElement('span');
-            span.className = 'menu-item-wrapper';
-            span.appendChild(dom);
-            result.appendChild(span);
-            localNodes.push(span);
+            groupEl.appendChild(dom); // Add directly to group, no wrapper spans
+            localNodes.push(dom);
             localUpdates.push(update);
         }
 
+        result.appendChild(groupEl);
+
         if (localUpdates.length) {
             updates.push(combineUpdates(localUpdates, localNodes));
-            if (i < content.length - 1) {
-                let separator = document.createElement('span');
-                separator.className = 'menu-separator';
-                separators.push(separator);
-                result.appendChild(separator);
-            }
         }
     }
 
