@@ -57,11 +57,15 @@ body {
     background-color: #f8f9fa;
 }
 
-.mode-switcher input[type="radio"] {
+.mode-switcher input[type="checkbox"] {
     accent-color: #3498db;
 }
 
-.mode-switcher input[type="radio"]:checked + label {
+.mode-switcher input[type="checkbox"]:checked {
+    background-color: #3498db;
+}
+
+.mode-switcher label:has(input[type="checkbox"]:checked) {
     background-color: #e3f2fd;
     color: #1976d2;
 }
@@ -74,7 +78,8 @@ body {
     overflow: hidden;
 }
 
-.editor-container {
+/* Editor Container - Single View */
+.editor-container.editor-single {
     max-width: 800px;
     margin: 0 auto;
     background: white;
@@ -82,6 +87,37 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     overflow: hidden;
     min-height: 500px;
+}
+
+/* Editor Container - Split View */
+.editor-container.editor-split {
+    max-width: none;
+    margin: 0 auto;
+    background: #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    min-height: 500px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+}
+
+/* Editor Panes */
+.editor-pane {
+    background: white;
+    overflow: auto;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-pane.wysiwyg-pane {
+    border-right: 1px solid #e9ecef;
+}
+
+.editor-pane.markdown-pane {
+    /* Markdown pane on the right */
 }
 
 /* Markdown Textarea Styles */
@@ -409,6 +445,26 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    /* Stack views vertically on tablets/mobile instead of side-by-side */
+    .editor-container.editor-split {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 1px;
+        max-height: 80vh;
+    }
+    
+    .editor-pane {
+        min-height: 300px;
+        max-height: 40vh;
+    }
+    
+    .editor-pane.wysiwyg-pane {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+}
+
 @media (max-width: 768px) {
     .header {
         flex-direction: column;
@@ -418,6 +474,22 @@ body {
     
     .main {
         padding: 1rem;
+    }
+    
+    .editor-container.editor-single {
+        max-width: none;
+        margin: 0;
+        border-radius: 4px;
+    }
+    
+    .editor-container.editor-split {
+        border-radius: 4px;
+        max-height: 70vh;
+    }
+    
+    .editor-pane {
+        min-height: 200px;
+        max-height: 35vh;
     }
     
     .ProseMirror, .markdown-textarea {

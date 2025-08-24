@@ -38,6 +38,11 @@ export class MarkdownView {
         // Auto-resize on input
         this.textarea.addEventListener('input', () => {
             this.updateHeight();
+            
+            // Call content change callback if set
+            if (this.onContentChange && typeof this.onContentChange === 'function') {
+                this.onContentChange(this.getContent());
+            }
         });
         
         // Handle tab insertion
@@ -71,10 +76,21 @@ export class MarkdownView {
         return this.textarea ? this.textarea.value : '';
     }
     
-    setContent(content) {
+    setContent(content, options = {}) {
         if (this.textarea) {
+            // Preserve cursor position if requested
+            const currentPosition = options.preserveCursor ? this.getCursorPosition() : 0;
+            
             this.textarea.value = content;
             this.updateHeight();
+            
+            // Restore cursor position if preserving
+            if (options.preserveCursor) {
+                // Adjust position if content length has changed
+                const newLength = content.length;
+                const adjustedPosition = Math.min(currentPosition, newLength);
+                this.setCursorPosition(adjustedPosition);
+            }
         }
     }
     

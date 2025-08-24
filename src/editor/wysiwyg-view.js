@@ -96,6 +96,11 @@ export class ProseMirrorView {
         
         // Emit custom events for content changes
         if (transaction.docChanged) {
+            // Call content change callback if set
+            if (this.onContentChange && typeof this.onContentChange === 'function') {
+                this.onContentChange(this.getContent());
+            }
+            
             this.target.dispatchEvent(new CustomEvent('content-changed', {
                 detail: { content: this.getContent() }
             }));
@@ -125,6 +130,30 @@ export class ProseMirrorView {
             this.view.updateState(state);
         } catch (error) {
             console.error('Failed to parse and set content:', error);
+        }
+    }
+    
+    updateContent(content, options = {}) {
+        if (!this.view) return;
+        
+        try {
+            const doc = parseMarkdown(content);
+            
+            if (options.preserveHistory) {
+                // Replace the entire document while preserving history
+                const tr = this.view.state.tr;
+                tr.replaceWith(0, this.view.state.doc.content.size, doc.content);
+                this.view.dispatch(tr);
+            } else {
+                // Create new state (this will reset history)
+                const state = EditorState.create({
+                    doc,
+                    plugins: this.view.state.plugins
+                });
+                this.view.updateState(state);
+            }
+        } catch (error) {
+            console.error('Failed to update content:', error);
         }
     }
     
