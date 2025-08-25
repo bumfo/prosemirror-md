@@ -13,7 +13,7 @@ import { liftListItem } from 'prosemirror-schema-list';
 /**
  * Debug flag for command logging
  */
-const DEBUG = true;
+const DEBUG = false;
 
 /**
  * Check if cursor is at the start of a block (legacy version)
@@ -57,7 +57,7 @@ function deleteBarrier(state, $cut, dispatch, dir) {
     if (!isolated) {
         let before = $cut.nodeBefore, after = $cut.nodeAfter, index = $cut.index();
         if (before && after && before.type.compatibleContent(after.type)) {
-            console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
+            if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
             return false;
         }
     }
@@ -68,12 +68,12 @@ function deleteBarrier(state, $cut, dispatch, dir) {
     let conn = match.findWrapping(after.type);
     if (!conn) return false;
 
-    console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
+    if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
 
     const extraMerge = true;
 
     if (match.matchType(conn[0] || after.type).validEnd) {
-        console.log('wrap', conn.map(x => x.name));
+        if (DEBUG) console.log('wrap', conn.map(x => x.name));
         if (dispatch) {
             let end = $cut.pos + after.nodeSize, wrap = Fragment.empty;
             for (let i = conn.length - 1; i >= 0; i--)
