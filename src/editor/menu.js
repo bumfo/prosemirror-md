@@ -104,11 +104,11 @@ class MenuItem {
          * @param {StateContext} context - Pre-computed state context
          * @returns {boolean} True if item should be visible
          */
-        // Cache for last states to avoid unnecessary DOM updates
+            // Cache for last states to avoid unnecessary DOM updates
         let lastVisible = null;
         let lastEnabled = null;
         let lastActive = null;
-        
+
         function update(state, context) {
             // Handle visibility (select function)
             let visible = true;
@@ -201,9 +201,9 @@ function renderGrouped(view, content) {
         // Create group container (restore original menu-group)
         let groupEl = document.createElement('div');
         groupEl.className = 'menu-group';
-        
+
         let items = content[i], localUpdates = [], localNodes = [];
-        
+
         for (let j = 0; j < items.length; j++) {
             let { dom, update } = items[j].render(view);
             groupEl.appendChild(dom); // Add directly to group, no wrapper spans
@@ -241,18 +241,18 @@ function renderGrouped(view, content) {
 class StateContext {
     constructor(state) {
         const { from, to, empty, node } = state.selection;
-        
+
         // Pre-compute position resolvers
         this.$from = state.doc.resolve(from);
         this.$to = state.doc.resolve(to);
-        
+
         // Pre-compute block information
         this.parentNode = this.$from.parent;
         this.parentType = this.parentNode.type;
         this.parentAttrs = this.parentNode.attrs || {};
         this.nodeSelection = node;
         this.selectionAtBlockEnd = to <= this.$from.end();
-        
+
         // Pre-compute mark information
         if (empty) {
             this.marksAtPosition = state.storedMarks || this.$from.marks();
@@ -261,20 +261,20 @@ class StateContext {
             this.marksAtPosition = null;
             this.selectionMarks = this.computeSelectionMarks(state, from, to);
         }
-        
+
         // Cache other commonly needed values
         this.empty = empty;
         this.from = from;
         this.to = to;
         this.state = state;
     }
-    
+
     computeSelectionMarks(state, from, to) {
         // Compute marks present throughout entire selection ONCE
         const marks = [];
         let firstTextNode = true;
         let hasAnyText = false;
-        
+
         state.doc.nodesBetween(from, to, (node) => {
             if (node.isText && node.text.length > 0) {
                 hasAnyText = true;
@@ -291,10 +291,10 @@ class StateContext {
                 }
             }
         });
-        
+
         return hasAnyText ? marks : [];
     }
-    
+
     // Efficient mark checking using pre-computed data
     isMarkActive(markType) {
         if (this.empty) {
@@ -303,7 +303,7 @@ class StateContext {
             return !!markType.isInSet(this.selectionMarks);
         }
     }
-    
+
     // Efficient block checking using pre-computed data  
     isBlockActive(nodeType, attrs = {}) {
         if (this.nodeSelection) {
@@ -317,30 +317,30 @@ class MenuView {
     constructor(items, editorView) {
         this.items = items;
         this.editorView = editorView;
-        
+
         // Create menu DOM element
         this.dom = document.createElement('div');
         this.dom.className = 'prosemirror-menu';
-        
+
         // Render grouped items
         let { dom: contentDom, update: contentUpdate } = renderGrouped(editorView, items);
         this.contentUpdate = contentUpdate;
         this.dom.appendChild(contentDom);
-        
+
         // Menu items handle their own clicks now
-        
+
         this.update();
     }
-    
+
     update() {
         // Create StateContext once with all pre-computed expensive operations
         const state = this.editorView.state;
         const context = new StateContext(state);
-        
+
         // Pass both state and context to all menu items
         this.contentUpdate(state, context);
     }
-    
+
     destroy() {
         this.dom.remove();
     }
@@ -396,16 +396,16 @@ function menuItem(icon, title, command, isActive = null, shortcut = null, isEnab
 function customToggleMark(markType) {
     return (state, dispatch, view) => {
         const { from, to, empty } = state.selection;
-        
+
         if (empty) {
             // For collapsed cursor, use standard toggleMark behavior
             return toggleMark(markType)(state, dispatch, view);
         }
-        
+
         // For selections, check if ENTIRE selection has the mark
         let allTextHasMark = true;
         let hasAnyText = false;
-        
+
         state.doc.nodesBetween(from, to, (node, pos) => {
             if (node.isText && node.text.length > 0) {
                 hasAnyText = true;
@@ -415,13 +415,13 @@ function customToggleMark(markType) {
                 }
             }
         });
-        
+
         if (!hasAnyText) return false;
-        
+
         if (!dispatch) return true; // Just checking if command is available
-        
+
         let tr = state.tr;
-        
+
         if (allTextHasMark) {
             // All text has the mark -> remove it
             tr = tr.removeMark(from, to, markType);
@@ -429,7 +429,7 @@ function customToggleMark(markType) {
             // Not all text has the mark -> apply it to entire selection
             tr = tr.addMark(from, to, markType.create());
         }
-        
+
         dispatch(tr);
         return true;
     };
@@ -470,25 +470,25 @@ function blockActive(nodeType, attrs = {}) {
 function linkCommand(markType) {
     return (state, dispatch, view) => {
         if (state.selection.empty) return false;
-        
+
         // If dispatch is null, we're just checking if command is available
         if (!dispatch) return true;
-        
+
         const { from, to } = state.selection;
         const start = state.doc.resolve(from);
         const end = state.doc.resolve(to);
-        
+
         // Check if selection already has a link
         const mark = markType.isInSet(start.marks());
         let href = '';
-        
+
         if (mark) {
             href = mark.attrs.href;
         }
-        
+
         const url = prompt('Enter URL:', href);
         if (url === null) return true; // User cancelled
-        
+
         if (url === '') {
             // Remove link
             dispatch(state.tr.removeMark(from, to, markType));
@@ -496,7 +496,7 @@ function linkCommand(markType) {
             // Add/update link
             dispatch(state.tr.addMark(from, to, markType.create({ href: url })));
         }
-        
+
         return true;
     };
 }
@@ -526,7 +526,7 @@ function markItem(markType, options) {
  * @returns {MenuItem} Menu item for block type
  */
 function blockTypeItem(nodeType, options) {
-    const {attrs = {}, ...otherOptions} = options;
+    const { attrs = {}, ...otherOptions } = options;
     const command = setBlockType(nodeType, attrs);
 
     const spec = {
@@ -545,7 +545,7 @@ function blockTypeItem(nodeType, options) {
  * @returns {MenuItem} Menu item for wrapping
  */
 function wrapItem(nodeType, options) {
-    const {attrs = {}, ...otherOptions} = options;
+    const { attrs = {}, ...otherOptions } = options;
     const command = wrapIn(nodeType, attrs);
 
     const spec = {
@@ -659,7 +659,7 @@ export function createMenuItems(schema) {
                 title: 'Horizontal rule',
                 run: (state, dispatch) => {
                     if (dispatch) {
-                        const {tr} = state;
+                        const { tr } = state;
                         const node = schema.nodes.horizontal_rule.create();
                         dispatch(tr.replaceSelectionWith(node));
                     }
@@ -699,12 +699,12 @@ function insertImageCommand(schema) {
     return (state, dispatch) => {
         // If dispatch is null, we're just checking if command is available
         if (!dispatch) return true;
-        
+
         const url = prompt('Enter image URL:', 'https://');
         if (url === null) return true; // User cancelled
-        
+
         if (url) {
-            const node = schema.nodes.image ? 
+            const node = schema.nodes.image ?
                 schema.nodes.image.create({ src: url }) :
                 schema.text(`![Image](${url})`);
             dispatch(state.tr.replaceSelectionWith(node));
@@ -723,7 +723,7 @@ function insertHardBreakCommand(schema) {
         const { $from, $to } = state.selection;
         if ($from.parent.type.spec.code) return false; // Don't insert in code blocks
         if (!dispatch) return true; // Just checking availability
-        
+
         if (schema.nodes.hard_break) {
             dispatch(state.tr.replaceWith($from.pos, $to.pos, schema.nodes.hard_break.create()));
         }
@@ -741,7 +741,7 @@ function clearFormattingCommand(schema) {
         const { from, to } = state.selection;
         if (from === to) return false;
         if (!dispatch) return true; // Just checking availability
-        
+
         let tr = state.tr;
         // Remove all marks from selection
         state.doc.nodesBetween(from, to, (node, pos) => {
@@ -766,7 +766,7 @@ function clearFormattingCommand(schema) {
 function insertTableCommand(schema) {
     return (state, dispatch) => {
         if (!dispatch) return true; // Just checking availability
-        
+
         // Simple table as markdown text since basic schema doesn't support tables
         const tableText = '| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |\n\n';
         const node = schema.text(tableText);
@@ -782,13 +782,13 @@ function insertTableCommand(schema) {
  */
 export function createKeymap(schema) {
     const keys = {};
-    
+
     // Text formatting
     keys['Mod-b'] = customToggleMark(schema.marks.strong);
     keys['Mod-i'] = customToggleMark(schema.marks.em);
     keys['Mod-`'] = customToggleMark(schema.marks.code);
     keys['Mod-k'] = linkCommand(schema.marks.link);
-    
+
     // Block types
     keys['Mod-Alt-0'] = setBlockType(schema.nodes.paragraph);
     keys['Mod-Alt-1'] = setBlockType(schema.nodes.heading, { level: 1 });
@@ -797,26 +797,26 @@ export function createKeymap(schema) {
     keys['Mod-Alt-4'] = setBlockType(schema.nodes.heading, { level: 4 });
     keys['Mod-Alt-5'] = setBlockType(schema.nodes.heading, { level: 5 });
     keys['Mod-Alt-6'] = setBlockType(schema.nodes.heading, { level: 6 });
-    
+
     // Lists and wrappers
     keys['Mod-Shift-8'] = wrapInList(schema.nodes.bullet_list);
     keys['Mod-Shift-7'] = wrapInList(schema.nodes.ordered_list);
     keys['Mod-Shift-.'] = wrapIn(schema.nodes.blockquote);
-    
+
     // History
     keys['Mod-z'] = undo;
     keys['Mod-Shift-z'] = redo;
     keys['Mod-y'] = redo; // Alternative redo
-    
+
     // List operations
     keys['Enter'] = splitListItem(schema.nodes.list_item);
     keys['Tab'] = sinkListItem(schema.nodes.list_item);
     keys['Shift-Tab'] = liftListItem(schema.nodes.list_item);
-    
+
     // Advanced commands
     keys['Shift-Enter'] = insertHardBreakCommand(schema);
     keys['Mod-\\'] = clearFormattingCommand(schema);
-    
+
     return keymap(keys);
 }
 
@@ -827,15 +827,15 @@ export function createKeymap(schema) {
  */
 export function menuPlugin(schema) {
     const menuItems = createMenuItems(schema);
-    
+
     return new Plugin({
         key: new PluginKey('menu'),
         view(editorView) {
             const menuView = new MenuView(menuItems, editorView);
-            
+
             // Insert menu before editor
             editorView.dom.parentNode.insertBefore(menuView.dom, editorView.dom);
-            
+
             // Return the view object with update and destroy methods
             return {
                 update(view, prevState) {
