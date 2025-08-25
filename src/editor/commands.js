@@ -84,12 +84,11 @@ function doJoin(tr, $cut) {
 
         if ($start.parent && $end.parent && $start.parent.type.compatibleContent($end.parent.type)) {
             tr.step(new ReplaceStep(start, end, Slice.empty, true));
-            posAfter = tr.mapping.slice(steps).map(posAfter);
         } else {
             let pos = findCutBefore(tr.doc.resolve(end));
             doJoin(tr, pos);
-            posAfter = tr.mapping.slice(steps).map(posAfter);
         }
+        posAfter = tr.mapping.slice(steps).map(posAfter);
     }
     let $joinAt = tr.doc.resolve(posAfter);
     if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
