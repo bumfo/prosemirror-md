@@ -25,21 +25,21 @@ function findCutBefore($pos) {
 }
 
 function deleteBarrier(state, $cut, dispatch, dir) {
-    if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
+    // if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
     if (!isolated) {
         let before = $cut.nodeBefore, after = $cut.nodeAfter, index = $cut.index();
         if (before && after && before.type.compatibleContent(after.type)) {
-            if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
+            // if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
             return false;
         }
     }
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
     if (!canDelAfter) return false;
-    let tr = doJoin(state, $cut)
+    let tr = doJoin(state.tr, $cut)
 
     if (dispatch && tr !== null) {
         dispatch(tr.scrollIntoView());
@@ -59,7 +59,7 @@ function doJoin(tr, $cut) {
     let match = before.contentMatchAt(before.childCount);
     let conn = match.findWrapping(after.type);
     if (!conn) return null;
-    if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
+    // if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
 
     if (!match.matchType(conn[0] || after.type).validEnd) return null;
 
@@ -135,7 +135,7 @@ export function customBackspace(schema) {
 
         // Only handle if at block start
         if (!atStart) {
-            if (DEBUG) console.log('skip not atStart');
+            // if (DEBUG) console.log('skip not atStart');
             return false;
         }
 
@@ -144,23 +144,23 @@ export function customBackspace(schema) {
 
         // If already a paragraph, try various backspace behaviors
         if (parent.type === schema.nodes.paragraph) {
-            if (DEBUG) console.log('already paragraph');
+            // if (DEBUG) console.log('already paragraph');
 
             // Check if we're in a list item and try to lift it first
             const grandparent = $from.node($from.depth - 1);
             if (grandparent && grandparent.type === schema.nodes.list_item) {
-                if (DEBUG) console.log('in list item, trying liftListItem');
+                // if (DEBUG) console.log('in list item, trying liftListItem');
                 if (liftListItem(schema.nodes.list_item)(state, dispatch)) {
                     return true;
                 }
             }
 
-            if (DEBUG) console.log('lift');
+            // if (DEBUG) console.log('lift');
             if (lift(state, dispatch)) {
                 return true;
             }
 
-            if (DEBUG) console.log('customJoinBackward');
+            // if (DEBUG) console.log('customJoinBackward');
             if (customJoinBackward(schema)(state, dispatch)) {
                 return true;
             }
