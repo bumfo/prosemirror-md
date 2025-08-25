@@ -1,14 +1,10 @@
 import {
-    joinPoint,
     canJoin,
-    findWrapping,
     liftTarget,
-    canSplit,
-    ReplaceStep,
     ReplaceAroundStep,
-    replaceStep
+
 } from 'prosemirror-transform';
-import { NodeSelection, Selection } from 'prosemirror-state';
+import { Selection } from 'prosemirror-state';
 import { Slice, Fragment } from 'prosemirror-model';
 import { lift, joinBackward, selectNodeBackward } from 'prosemirror-commands';
 import { liftListItem } from 'prosemirror-schema-list';
@@ -16,7 +12,7 @@ import { liftListItem } from 'prosemirror-schema-list';
 /**
  * Debug flag for command logging
  */
-const DEBUG = false;
+const DEBUG = true;
 
 /**
  * Check if cursor is at the start of a block (legacy version)
@@ -67,6 +63,8 @@ function joinMaybeClear(state, $pos, dispatch) {
 }
 
 function deleteBarrier(state, $cut, dispatch, dir) {
+    if (DEBUG) console.log('deleteBarrier');
+
     let before = $cut.nodeBefore, after = $cut.nodeAfter, conn, match;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
     if (!isolated && joinMaybeClear(state, $cut, dispatch)) return true;
@@ -136,46 +134,12 @@ function customJoinBackward(schema) {
         if (!$cursor) return false;
 
         let $cut = findCutBefore($cursor);
-
-        // If there is no node before this, try to lift
         if (!$cut) {
-            let range = $cursor.blockRange(), target = range && liftTarget(range);
-            if (target == null) return false;
-            if (dispatch) dispatch(state.tr.lift(range, target).scrollIntoView());
-            return true;
+            return false; // fallback to default impl
         }
 
-        let before = $cut.nodeBefore;
         // Apply the joining algorithm
-        if (deleteBarrier(state, $cut, dispatch, -1)) return true;
-
-        // If the node below has no content and the node above is
-        // selectable, delete the node below and select the one above.
-        if ($cursor.parent.content.size === 0 &&
-            (textblockAt(before, 'end') || NodeSelection.isSelectable(before))) {
-            for (let depth = $cursor.depth; ; depth--) {
-                let delStep = replaceStep(state.doc, $cursor.before(depth), $cursor.after(depth), Slice.empty);
-                if (delStep && delStep.slice.size < delStep.to - delStep.from) {
-                    if (dispatch) {
-                        let tr = state.tr.step(delStep);
-                        tr.setSelection(textblockAt(before, 'end')
-                            ? Selection.findFrom(tr.doc.resolve(tr.mapping.map($cut.pos, -1)), -1)
-                            : NodeSelection.create(tr.doc, $cut.pos - before.nodeSize));
-                        dispatch(tr.scrollIntoView());
-                    }
-                    return true;
-                }
-                if (depth === 1 || $cursor.node(depth - 1).childCount > 1) break;
-            }
-        }
-
-        // If the node before is an atom, delete it
-        if (before.isAtom && $cut.depth === $cursor.depth - 1) {
-            if (dispatch) dispatch(state.tr.delete($cut.pos - before.nodeSize, $cut.pos).scrollIntoView());
-            return true;
-        }
-
-        return false;
+        return deleteBarrier(state, $cut, dispatch, -1);
     };
 }
 
@@ -204,7 +168,7 @@ export function customBackspace(schema) {
         // If already a paragraph, try various backspace behaviors
         if (parent.type === schema.nodes.paragraph) {
             if (DEBUG) console.log('already paragraph');
-            
+
             // Check if we're in a list item and try to lift it first
             const grandparent = $from.node($from.depth - 1);
             if (grandparent && grandparent.type === schema.nodes.list_item) {
@@ -213,27 +177,27 @@ export function customBackspace(schema) {
                     return true;
                 }
             }
-            
+
             if (DEBUG) console.log('lift');
             if (lift(state, dispatch)) {
                 return true;
             }
-            
+
             if (DEBUG) console.log('customJoinBackward');
             if (customJoinBackward(schema)(state, dispatch)) {
                 return true;
             }
-            
+
             if (DEBUG) console.log('joinBackward fallback');
             if (joinBackward(state, dispatch)) {
                 return true;
             }
-            
+
             if (DEBUG) console.log('selectNodeBackward');
             if (selectNodeBackward(state, dispatch)) {
                 return true;
             }
-            
+
             return true;
         }
 
