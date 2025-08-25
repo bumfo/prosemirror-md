@@ -10,7 +10,7 @@ import { keymap } from 'prosemirror-keymap';
  */
 
 // Debug mode configuration (set to true to enable debug logging)
-const DEBUG_MENU = true;
+const DEBUG_MENU = false;
 
 // Use original class names that match our existing CSS
 const prefix = "";
@@ -249,140 +249,79 @@ class MenuView {
         
         // Menu items handle their own clicks now
         
-        // Store last update state to prevent unnecessary updates
-        this.lastUpdateState = null;
+        // Store last relevant state to avoid unnecessary DOM updates
+        this.lastRelevantState = null;
         
         this.update();
     }
     
     update() {
-        // Update immediately for responsive feedback
-        this.doUpdate();
-    }
-    
-    doUpdate() {
         const state = this.editorView.state;
         
-        // Create a state signature to avoid unnecessary updates
-        const stateSignature = this.createStateSignature(state);
-        if (DEBUG_MENU) console.log('State signature:', stateSignature);
-        if (stateSignature === this.lastUpdateState) {
-            if (DEBUG_MENU) console.log('Skipping update - same state signature');
-            return; // No need to update
-        }
-        if (DEBUG_MENU) console.log('Updating menu - new state signature');
-        this.lastUpdateState = stateSignature;
+        // Create a minimal state signature that only includes what affects menu appearance
+        const relevantState = this.getRelevantState(state);
         
-        // Use the grouped content update function
-        this.contentUpdate(state);
+        // Only update if something that affects the menu has changed
+        if (relevantState !== this.lastRelevantState) {
+            if (DEBUG_MENU) console.log('Menu update needed - state changed');
+            this.lastRelevantState = relevantState;
+            this.contentUpdate(state);
+        } else {
+            if (DEBUG_MENU) console.log('Menu update skipped - no relevant changes');
+        }
     }
     
-    createStateSignature(state) {
+    getRelevantState(state) {
         const { from, to, empty } = state.selection;
         const $from = state.doc.resolve(from);
         
-        // Create a comprehensive state object that captures ALL relevant state
-        // BUT exclude position details that don't affect menu state
-        const stateObj = {
-            selection: {
-                // Only include whether selection is empty (affects mark behavior)
-                empty,
-                // Include complete parent node information
-                parentNode: {
-                    type: $from.parent.type.name,
-                    // Include ALL attributes - this ensures heading levels, alignment, etc. are captured
-                    attrs: $from.parent.attrs || {}
-                },
-                // Only include selection range if it crosses block boundaries (affects block commands)
-                // This avoids updates on every cursor movement within the same block
-                crossesBlocks: empty ? false : (to > $from.end() || from < $from.start())
+        // Only track state that actually affects menu button appearance
+        const relevantState = {
+            // Parent node type and attributes (for block buttons like headings)
+            parentNode: {
+                type: $from.parent.type.name,
+                attrs: $from.parent.attrs || {}
             },
-            // Capture marks with their attributes (e.g., link hrefs)
-            marks: this.getSelectionMarks(state, from, to, empty, $from),
-            // Include history state for undo/redo
-            history: this.getHistoryState(state)
+            // Whether selection is empty (affects mark toggle behavior)
+            empty,
+            // Marks at cursor position or in selection
+            marks: this.getRelevantMarks(state, from, to, empty, $from),
+            // Whether selection crosses blocks (affects some commands)
+            crossesBlocks: !empty && (to > $from.end() || from < $from.start()),
+            // History state for undo/redo buttons
+            canUndo: undo(state),
+            canRedo: redo(state)
         };
 
-        // Use JSON.stringify for deterministic serialization
-        // This ensures ANY change in state will be detected
-        return JSON.stringify(stateObj);
+        return JSON.stringify(relevantState);
     }
 
-    getSelectionMarks(state, from, to, empty, $from) {
+    getRelevantMarks(state, from, to, empty, $from) {
         if (empty) {
-            // For collapsed selections, track both stored marks and position marks
+            // For collapsed cursor, get marks at position
             const marks = state.storedMarks || $from.marks();
-            return marks.map(mark => ({
-                type: mark.type.name,
-                attrs: mark.attrs || {}
-            }));
+            return marks.map(m => ({ type: m.type.name, attrs: m.attrs })).sort((a, b) => a.type.localeCompare(b.type));
         } else {
-            // For selections, track marks that are present throughout the ENTIRE selection
-            const markMap = new Map();
-            let firstTextNode = true;
-            
-            state.doc.nodesBetween(from, to, (node) => {
-                if (node.isText && node.text.length > 0) {
-                    const nodeMarks = new Map();
-                    node.marks.forEach(mark => {
-                        nodeMarks.set(mark.type.name, mark.attrs || {});
-                    });
-                    
-                    if (firstTextNode) {
-                        // Initialize with marks from first text node
-                        nodeMarks.forEach((attrs, type) => {
-                            markMap.set(type, attrs);
-                        });
-                        firstTextNode = false;
+            // For selection, get marks present throughout entire selection
+            const marks = [];
+            let first = true;
+            state.doc.nodesBetween(from, to, node => {
+                if (node.isText) {
+                    if (first) {
+                        marks.push(...node.marks.map(m => ({ type: m.type.name, attrs: m.attrs })));
+                        first = false;
                     } else {
-                        // Keep only marks that exist in ALL text nodes (intersection)
-                        for (let [type, attrs] of markMap) {
-                            if (!nodeMarks.has(type) ||
-                                JSON.stringify(nodeMarks.get(type)) !== JSON.stringify(attrs)) {
-                                markMap.delete(type);
+                        // Keep only marks present in all text nodes
+                        for (let i = marks.length - 1; i >= 0; i--) {
+                            const mark = marks[i];
+                            if (!node.marks.some(m => m.type.name === mark.type && JSON.stringify(m.attrs) === JSON.stringify(mark.attrs))) {
+                                marks.splice(i, 1);
                             }
                         }
                     }
                 }
             });
-            
-            // Convert to array format for JSON serialization
-            return Array.from(markMap.entries()).map(([type, attrs]) => ({
-                type,
-                attrs
-            })).sort((a, b) => a.type.localeCompare(b.type));
-        }
-    }
-
-    getHistoryState(state) {
-        try {
-            // Try to get history state using the history plugin key
-            const historyPlugin = state.plugins.find(plugin => {
-                return plugin.spec && plugin.spec.key &&
-                       (plugin.spec.key === 'history' || plugin.spec.key.key === 'history');
-            });
-            
-            if (historyPlugin) {
-                const history = historyPlugin.getState(state);
-                if (history && history.done && history.undone) {
-                    return {
-                        done: history.done.length,
-                        undone: history.undone.length
-                    };
-                }
-            }
-
-            // Fallback: try to detect history changes by testing undo/redo availability
-            return {
-                canUndo: undo(state),
-                canRedo: redo(state)
-            };
-        } catch (e) {
-            if (DEBUG_MENU) console.warn('History state detection failed:', e);
-            // Last resort: use document size as proxy
-            return {
-                docSize: state.doc.content.size
-            };
+            return marks.sort((a, b) => a.type.localeCompare(b.type));
         }
     }
     
@@ -868,7 +807,17 @@ export function menuPlugin(schema) {
             // Insert menu before editor
             editorView.dom.parentNode.insertBefore(menuView.dom, editorView.dom);
             
-            return menuView;
+            // Return the view object with update and destroy methods
+            return {
+                update(view, prevState) {
+                    // Update menu on every state change
+                    // ProseMirror already optimizes when this is called
+                    menuView.update();
+                },
+                destroy() {
+                    menuView.destroy();
+                }
+            };
         }
     });
 }
