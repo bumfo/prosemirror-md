@@ -12,22 +12,28 @@ import { keymap } from 'prosemirror-keymap';
  * See menu.d.ts for complete type definitions
  */
 
-// Debug mode configuration (set to true to enable debug logging)
-const DEBUG_MENU = true;
+// Debug mode configuration
+const DEBUG_MENU = false;
 
 /**
+ * @typedef {import('prosemirror-view').EditorView} EditorView
+ * @typedef {import('prosemirror-state').EditorState} EditorState
  * @typedef {import('./menu.d.ts').MenuItem} MenuItem
  * @typedef {import('./menu.d.ts').IconSpec} IconSpec
  * @typedef {import('./menu.d.ts').MenuItemSpec} MenuItemSpec
+ * @typedef {import('./menu.d.ts').CommandFn} CommandFn
+ * @typedef {import('./menu.d.ts').ActiveFn} ActiveFn
+ * @typedef {import('./menu.d.ts').EnableFn} EnableFn
+ * @typedef {import('./menu.d.ts').StateContext} StateContext
  */
 
+
 /**
- * MenuItem class implementing our custom MenuElement interface
- * Uses StateContext for optimized state checking
+ * MenuItem class with optimized state checking via StateContext
  */
 class MenuItem {
     /**
-     * Create a menu item
+     * @param {MenuItemSpec} spec - Menu item specification
      */
     constructor(spec) {
         this.spec = spec;
@@ -94,7 +100,7 @@ class MenuItem {
         /**
          * Update function called on state changes
          * @param {EditorState} state - Current editor state
-         * @param {import('./menu.d.ts').StateContext} context - Pre-computed state context
+         * @param {StateContext} context - Pre-computed state context
          * @returns {boolean} True if item should be visible
          */
         // Cache for last states to avoid unnecessary DOM updates
@@ -141,7 +147,7 @@ class MenuItem {
 }
 
 /**
- * Utility function to toggle CSS classes (IE11 compatible)
+ * Toggle CSS classes
  * @param {HTMLElement} dom - DOM element
  * @param {string} cls - CSS class name
  * @param {boolean} on - Whether to add or remove class
@@ -156,9 +162,9 @@ function setClass(dom, cls, on) {
 
 /**
  * Combine multiple update functions into one
- * @param {Array<import('./menu.d.ts').RenderedMenuItem['update']>} updates - Array of update functions
+ * @param {Array<function>} updates - Array of update functions
  * @param {Array<HTMLElement>} nodes - Array of corresponding DOM nodes
- * @returns {import('./menu.d.ts').RenderedGroup['update']} Combined update function
+ * @returns {function} Combined update function
  */
 function combineUpdates(updates, nodes) {
     return (state, context) => {
@@ -228,8 +234,7 @@ function renderGrouped(view, content) {
 }
 
 /**
- * StateContext - Pre-computes expensive state operations once per update
- * to avoid redundant computation across multiple menu items
+ * Pre-computes expensive state operations to avoid redundant computation
  * @implements {import('./menu.d.ts').StateContext}
  */
 class StateContext {
@@ -341,13 +346,13 @@ class MenuView {
 }
 
 /**
- * Helper function to create menu items with keyboard shortcuts
- * @param {import('./menu.d.ts').IconSpec|string} icon - Icon specification or HTML string
+ * Create menu item with keyboard shortcut
+ * @param {IconSpec|string} icon - Icon specification or HTML string
  * @param {string} title - Item title
- * @param {import('./menu.d.ts').CommandFn} command - Command function
- * @param {import('./menu.d.ts').ActiveFn|null} [isActive] - Active state function
+ * @param {CommandFn} command - Command function
+ * @param {ActiveFn|null} [isActive] - Active state function
  * @param {string|null} [shortcut] - Keyboard shortcut
- * @param {import('./menu.d.ts').EnableFn|null} [isEnabled] - Enable state function
+ * @param {EnableFn|null} [isEnabled] - Enable state function
  * @returns {MenuItem} Menu item instance
  */
 function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
