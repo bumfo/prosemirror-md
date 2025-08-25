@@ -116,6 +116,7 @@ class MenuItem {
         /**
          * Update function called on state changes
          * @param {EditorState} state - Current editor state
+         * @param {StateContext} context - Pre-computed state context
          * @returns {boolean} True if item should be visible
          */
         // Cache for last states to avoid unnecessary DOM updates
@@ -123,11 +124,11 @@ class MenuItem {
         let lastEnabled = null;
         let lastActive = null;
         
-        function update(state) {
+        function update(state, context) {
             // Handle visibility (select function)
             let visible = true;
             if (spec.select) {
-                visible = spec.select(state);
+                visible = spec.select(state, context);
                 if (visible !== lastVisible) {
                     dom.style.display = visible ? '' : 'none';
                     lastVisible = visible;
@@ -138,7 +139,7 @@ class MenuItem {
             // Handle enabled state
             let enabled = true;
             if (spec.enable) {
-                enabled = spec.enable(state) || false;
+                enabled = spec.enable(state, context) || false;
                 if (enabled !== lastEnabled) {
                     setClass(dom, 'disabled', !enabled);
                     lastEnabled = enabled;
@@ -147,7 +148,7 @@ class MenuItem {
 
             // Handle active state
             if (spec.active) {
-                let active = enabled && spec.active(state) || false;
+                let active = enabled && spec.active(state, context) || false;
                 if (active !== lastActive) {
                     setClass(dom, 'active', active);
                     lastActive = active;
@@ -182,10 +183,10 @@ function setClass(dom, cls, on) {
  * @returns {function} Combined update function
  */
 function combineUpdates(updates, nodes) {
-    return (state) => {
+    return (state, context) => {
         let something = false;
         for (let i = 0; i < updates.length; i++) {
-            let up = updates[i](state);
+            let up = updates[i](state, context);
             nodes[i].style.display = up ? '' : 'none';
             if (up) something = true;
         }
@@ -232,10 +233,10 @@ function renderGrouped(view, content) {
         }
     }
 
-    function update(state) {
+    function update(state, context) {
         let something = false, needSep = false;
         for (let i = 0; i < updates.length; i++) {
-            let hasContent = updates[i](state);
+            let hasContent = updates[i](state, context);
             if (i && separators[i - 1]) {
                 separators[i - 1].style.display = needSep && hasContent ? '' : 'none';
             }
@@ -246,6 +247,85 @@ function renderGrouped(view, content) {
     }
 
     return { dom: result, update };
+}
+
+/**
+ * StateContext - Pre-computes expensive state operations once per update
+ * to avoid redundant computation across multiple menu items
+ */
+class StateContext {
+    constructor(state) {
+        const { from, to, empty, node } = state.selection;
+        
+        // Pre-compute position resolvers
+        this.$from = state.doc.resolve(from);
+        this.$to = state.doc.resolve(to);
+        
+        // Pre-compute block information
+        this.parentNode = this.$from.parent;
+        this.parentType = this.parentNode.type;
+        this.parentAttrs = this.parentNode.attrs || {};
+        this.nodeSelection = node;
+        this.selectionAtBlockEnd = to <= this.$from.end();
+        
+        // Pre-compute mark information
+        if (empty) {
+            this.marksAtPosition = state.storedMarks || this.$from.marks();
+            this.selectionMarks = null;
+        } else {
+            this.marksAtPosition = null;
+            this.selectionMarks = this.computeSelectionMarks(state, from, to);
+        }
+        
+        // Cache other commonly needed values
+        this.empty = empty;
+        this.from = from;
+        this.to = to;
+        this.state = state;
+    }
+    
+    computeSelectionMarks(state, from, to) {
+        // Compute marks present throughout entire selection ONCE
+        const marks = [];
+        let firstTextNode = true;
+        let hasAnyText = false;
+        
+        state.doc.nodesBetween(from, to, (node) => {
+            if (node.isText && node.text.length > 0) {
+                hasAnyText = true;
+                if (firstTextNode) {
+                    marks.push(...node.marks);
+                    firstTextNode = false;
+                } else {
+                    // Keep only marks present in all text nodes
+                    for (let i = marks.length - 1; i >= 0; i--) {
+                        if (!marks[i].isInSet(node.marks)) {
+                            marks.splice(i, 1);
+                        }
+                    }
+                }
+            }
+        });
+        
+        return hasAnyText ? marks : [];
+    }
+    
+    // Efficient mark checking using pre-computed data
+    isMarkActive(markType) {
+        if (this.empty) {
+            return !!markType.isInSet(this.marksAtPosition);
+        } else {
+            return !!markType.isInSet(this.selectionMarks);
+        }
+    }
+    
+    // Efficient block checking using pre-computed data  
+    isBlockActive(nodeType, attrs = {}) {
+        if (this.nodeSelection) {
+            return this.nodeSelection.hasMarkup(nodeType, attrs);
+        }
+        return this.selectionAtBlockEnd && this.parentNode.hasMarkup(nodeType, attrs);
+    }
 }
 
 class MenuView {
@@ -268,9 +348,12 @@ class MenuView {
     }
     
     update() {
-        // Simply update all menu items - they handle their own state optimization
+        // Create StateContext once with all pre-computed expensive operations
         const state = this.editorView.state;
-        this.contentUpdate(state);
+        const context = new StateContext(state);
+        
+        // Pass both state and context to all menu items
+        this.contentUpdate(state, context);
     }
     
     destroy() {
@@ -363,55 +446,21 @@ function customToggleMark(markType) {
     };
 }
 
-// Helper function to check if a mark is active
+// Context-aware helper function to check if a mark is active
 function markActive(markType) {
     // Capture markType in closure to avoid reference issues
     const type = markType;
-    return (state) => {
-        const { from, to, empty } = state.selection;
-        
-        if (empty) {
-            // For collapsed selections, check both stored marks and position marks
-            const $from = state.doc.resolve(from);
-            if (state.storedMarks) {
-                // Explicitly stored marks exist (user toggled something)
-                return !!type.isInSet(state.storedMarks);
-            } else {
-                // No explicit stored marks, check position marks
-                return !!type.isInSet($from.marks());
-            }
-        }
-        
-        // For non-empty selections, only show active if the ENTIRE selection has the mark
-        // This prioritizes applying marks over removing them
-        let allTextHasMark = true;
-        let hasAnyText = false;
-        
-        state.doc.nodesBetween(from, to, (node, pos) => {
-            if (node.isText && node.text.length > 0) {
-                hasAnyText = true;
-                const nodeStart = Math.max(pos, from);
-                const nodeEnd = Math.min(pos + node.nodeSize, to);
-                
-                // Check if this text node has the mark for the selected portion
-                if (!type.isInSet(node.marks)) {
-                    allTextHasMark = false;
-                    return false; // Stop iteration
-                }
-            }
-        });
-        
-        // Only show active if selection has text and ALL of it has the mark
-        return hasAnyText && allTextHasMark;
+    return (state, context) => {
+        // Use pre-computed context for efficient checking
+        return context.isMarkActive(type);
     };
 }
 
-// Helper function to check if a block type is active
+// Context-aware helper function to check if a block type is active
 function blockActive(nodeType, attrs = {}) {
-    return (state) => {
-        const { $from, to, node } = state.selection;
-        if (node) return node.hasMarkup(nodeType, attrs);
-        return to <= $from.end() && $from.parent.hasMarkup(nodeType, attrs);
+    return (state, context) => {
+        // Use pre-computed context for efficient checking
+        return context.isBlockActive(nodeType, attrs);
     };
 }
 
