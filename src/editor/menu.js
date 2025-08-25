@@ -356,7 +356,7 @@ class MenuView {
  * @param {EnableFn|null} [isEnabled] - Enable state function
  * @returns {MenuItem} Menu item instance
  */
-function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
+export function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
     // Build title with optional keyboard shortcut
     let fullTitle = title;
     if (shortcut) {
@@ -476,7 +476,7 @@ function linkCommand(markType) {
 
         const { from, to } = state.selection;
         const start = state.doc.resolve(from);
-        const end = state.doc.resolve(to);
+        // const end = state.doc.resolve(to);
 
         // Check if selection already has a link
         const mark = markType.isInSet(start.marks());

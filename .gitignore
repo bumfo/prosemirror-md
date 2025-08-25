@@ -20,6 +20,7 @@ build/
 # Editor directories and files
 .vscode/
 .idea/
+.fleet/
 *.swp
 *.swo
 *~
