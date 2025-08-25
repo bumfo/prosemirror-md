@@ -24,7 +24,7 @@ export default [
       }
     },
     rules: {
-      'no-unused-vars': ['warn', {
+      'no-unused-vars': ['off', {
         args: 'none',
         argsIgnorePattern: '^_', // function foo(_unused) {}
         varsIgnorePattern: '^_', // const _unused = 1

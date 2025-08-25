@@ -2,16 +2,16 @@ import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
-import { 
-    MenuItem, 
-    markItem, 
-    blockTypeItem, 
-    wrapItem, 
-    customToggleMark, 
-    markActive, 
+import {
+    MenuItem,
+    markItem,
+    blockTypeItem,
+    wrapItem,
+    customToggleMark,
+    markActive,
     blockActive,
     menuBar,
-    icons 
+    icons
 } from '../menu/index.js';
 
 /**
