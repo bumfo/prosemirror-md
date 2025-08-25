@@ -44,15 +44,14 @@ export class ProseMirrorView {
             plugins: [
                 // Core editing plugins
                 history(),
-                keymap(baseKeymap),
                 dropCursor(),
                 gapCursor(),
 
                 // Markdown input rules for smart typing
                 createInputRules(),
 
-                // Custom keyboard shortcuts
                 createKeymap(markdownSchema),
+                keymap(baseKeymap),
 
                 // Custom menu plugin
                 menuPlugin(markdownSchema),
