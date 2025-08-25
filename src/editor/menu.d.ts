@@ -198,6 +198,53 @@ export function markActive(markType: MarkType): ActiveFn;
 export function blockActive(nodeType: NodeType, attrs?: Record<string, any>): ActiveFn;
 
 /**
+ * Menu item utility options for marks
+ */
+export interface MarkItemOptions {
+    /** Icon specification */
+    icon?: IconSpec | string;
+    /** Text label */
+    label?: string;
+    /** Tooltip text */
+    title?: string | TitleFn;
+    /** Additional CSS class */
+    class?: string;
+    /** Additional CSS styles */
+    css?: string;
+}
+
+/**
+ * Menu item utility options for block types
+ */
+export interface BlockTypeItemOptions extends MarkItemOptions {
+    /** Node attributes */
+    attrs?: Record<string, any>;
+}
+
+/**
+ * Menu item utility options for wrap items
+ */
+export interface WrapItemOptions extends MarkItemOptions {
+    /** Node attributes */
+    attrs?: Record<string, any>;
+}
+
+/**
+ * Create menu item for toggling a mark (bold, italic, code, etc.)
+ */
+export function markItem(markType: MarkType, options: MarkItemOptions): MenuItem;
+
+/**
+ * Create menu item for setting block type (paragraph, headings, etc.)
+ */
+export function blockTypeItem(nodeType: NodeType, options: BlockTypeItemOptions): MenuItem;
+
+/**
+ * Create menu item for wrapping selection in a node (blockquote, lists)
+ */
+export function wrapItem(nodeType: NodeType, options: WrapItemOptions): MenuItem;
+
+/**
  * Create menu items for a schema
  */
 export function createMenuItems(schema: Schema): MenuItem[][];

@@ -3,6 +3,7 @@ import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
+import { icons } from './icons.js';
 
 /**
  * Custom menu plugin for ProseMirror markdown editing
@@ -500,6 +501,61 @@ function linkCommand(markType) {
     };
 }
 
+// Menu item utility factories
+
+/**
+ * Create menu item for toggling a mark (bold, italic, code, etc.)
+ * @param {import('prosemirror-model').MarkType} markType - Mark type to toggle
+ * @param {Object} options - Menu item options (icon, title, etc.)
+ * @returns {MenuItem} Menu item for mark toggle
+ */
+function markItem(markType, options) {
+    const spec = {
+        run: customToggleMark(markType),
+        active: markActive(markType),
+        enable: (state) => customToggleMark(markType)(state), // Check if command is available
+        ...options
+    };
+    return new MenuItem(spec);
+}
+
+/**
+ * Create menu item for setting block type (paragraph, headings, etc.)
+ * @param {import('prosemirror-model').NodeType} nodeType - Node type to set
+ * @param {Object} options - Menu item options (attrs, icon, title, etc.)
+ * @returns {MenuItem} Menu item for block type
+ */
+function blockTypeItem(nodeType, options) {
+    const {attrs = {}, ...otherOptions} = options;
+    const command = setBlockType(nodeType, attrs);
+
+    const spec = {
+        run: command,
+        active: blockActive(nodeType, attrs),
+        enable: (state) => command(state), // Check if command is available
+        ...otherOptions
+    };
+    return new MenuItem(spec);
+}
+
+/**
+ * Create menu item for wrapping selection in a node (blockquote, lists)
+ * @param {import('prosemirror-model').NodeType} nodeType - Node type to wrap with
+ * @param {Object} options - Menu item options (attrs, icon, title, etc.)
+ * @returns {MenuItem} Menu item for wrapping
+ */
+function wrapItem(nodeType, options) {
+    const {attrs = {}, ...otherOptions} = options;
+    const command = wrapIn(nodeType, attrs);
+
+    const spec = {
+        run: command,
+        enable: (state) => command(state), // Check if command is available
+        ...otherOptions
+    };
+    return new MenuItem(spec);
+}
+
 /**
  * Create menu items for a given schema
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
@@ -538,7 +594,7 @@ export function createMenuItems(schema) {
                 'Mod-k'
             )
         ],
-        
+
         // Block types group
         [
             menuItem(
@@ -551,22 +607,22 @@ export function createMenuItems(schema) {
             menuItem(
                 icons.h1,
                 'Heading 1',
-                setBlockType(schema.nodes.heading, { level: 1 }),
-                blockActive(schema.nodes.heading, { level: 1 }),
+                setBlockType(schema.nodes.heading, {level: 1}),
+                blockActive(schema.nodes.heading, {level: 1}),
                 'Mod-Alt-1'
             ),
             menuItem(
                 icons.h2,
                 'Heading 2',
-                setBlockType(schema.nodes.heading, { level: 2 }),
-                blockActive(schema.nodes.heading, { level: 2 }),
+                setBlockType(schema.nodes.heading, {level: 2}),
+                blockActive(schema.nodes.heading, {level: 2}),
                 'Mod-Alt-2'
             ),
             menuItem(
                 icons.h3,
                 'Heading 3',
-                setBlockType(schema.nodes.heading, { level: 3 }),
-                blockActive(schema.nodes.heading, { level: 3 }),
+                setBlockType(schema.nodes.heading, {level: 3}),
+                blockActive(schema.nodes.heading, {level: 3}),
                 'Mod-Alt-3'
             ),
             menuItem(
@@ -575,7 +631,7 @@ export function createMenuItems(schema) {
                 setBlockType(schema.nodes.code_block)
             )
         ],
-        
+
         // Block wrappers group
         [
             menuItem(
@@ -594,7 +650,7 @@ export function createMenuItems(schema) {
                 wrapInList(schema.nodes.ordered_list)
             )
         ],
-        
+
         // Actions group
         [
             menuItem(
@@ -626,7 +682,7 @@ export function createMenuItems(schema) {
                 'Horizontal rule',
                 (state, dispatch) => {
                     if (dispatch) {
-                        const { tr } = state;
+                        const {tr} = state;
                         const node = schema.nodes.horizontal_rule.create();
                         dispatch(tr.replaceSelectionWith(node));
                     }
