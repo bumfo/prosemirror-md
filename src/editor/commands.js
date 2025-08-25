@@ -2,6 +2,7 @@ import {
     canJoin,
     liftTarget,
     ReplaceAroundStep,
+    Transform,
 
 } from 'prosemirror-transform';
 import { Selection } from 'prosemirror-state';
@@ -48,72 +49,50 @@ function textblockAt(node, side, only = false) {
     return false;
 }
 
-function joinMaybeClear(state, $pos, dispatch) {
-    let before = $pos.nodeBefore, after = $pos.nodeAfter, index = $pos.index();
-    if (!before || !after || !before.type.compatibleContent(after.type)) return false;
-    if (!before.content.size && $pos.parent.canReplace(index - 1, index)) {
-        if (dispatch) dispatch(state.tr.delete($pos.pos - before.nodeSize, $pos.pos).scrollIntoView());
-        return true;
-    }
-    if (!$pos.parent.canReplace(index, index + 1) || !(after.isTextblock || canJoin(state.doc, $pos.pos)))
-        return false;
-    if (dispatch)
-        dispatch(state.tr.join($pos.pos).scrollIntoView());
-    return true;
-}
-
 function deleteBarrier(state, $cut, dispatch, dir) {
-    if (DEBUG) console.log('deleteBarrier');
+    if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
-    let before = $cut.nodeBefore, after = $cut.nodeAfter, conn, match;
+    let before = $cut.nodeBefore, after = $cut.nodeAfter;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
-    if (!isolated && joinMaybeClear(state, $cut, dispatch)) return true;
+    if (!isolated) {
+        let before = $cut.nodeBefore, after = $cut.nodeAfter, index = $cut.index();
+        if (before && after && before.type.compatibleContent(after.type)) {
+            console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
+            return false;
+        }
+    }
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
-    if (canDelAfter &&
-        (conn = (match = before.contentMatchAt(before.childCount)).findWrapping(after.type)) &&
-        match.matchType(conn[0] || after.type).validEnd) {
+    if (!canDelAfter) return false;
+    let match = before.contentMatchAt(before.childCount);
+    let conn = match.findWrapping(after.type);
+    if (!conn) return false;
+
+    console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
+
+    const extraMerge = true;
+
+    if (match.matchType(conn[0] || after.type).validEnd) {
+        console.log('wrap', conn.map(x => x.name));
         if (dispatch) {
             let end = $cut.pos + after.nodeSize, wrap = Fragment.empty;
             for (let i = conn.length - 1; i >= 0; i--)
                 wrap = Fragment.from(conn[i].create(null, wrap));
             wrap = Fragment.from(before.copy(wrap));
             let tr = state.tr.step(new ReplaceAroundStep($cut.pos - 1, end, $cut.pos, end, new Slice(wrap, 1, 0), conn.length, true));
-            let $joinAt = tr.doc.resolve(end + 2 * conn.length);
+            let posAfter = end + 2 * conn.length;
+            if (extraMerge) {
+                let depth = 1 + conn.length;
+                let mapping= new Transform(tr.doc).join($cut.pos - 1, depth).mapping;
+                tr = tr.join($cut.pos - 1, depth);
+                posAfter = mapping.map(posAfter);
+            }
+            let $joinAt = tr.doc.resolve(posAfter);
             if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
                 canJoin(tr.doc, $joinAt.pos)) tr.join($joinAt.pos);
             dispatch(tr.scrollIntoView());
         }
         return true;
-    }
-
-    let selAfter = after.type.spec.isolating || (dir > 0 && isolated) ? null : Selection.findFrom($cut, 1);
-    let range = selAfter && selAfter.$from.blockRange(selAfter.$to), target = range && liftTarget(range);
-    if (target != null && target >= $cut.depth) {
-        if (dispatch) dispatch(state.tr.lift(range, target).scrollIntoView());
-        return true;
-    }
-
-    if (canDelAfter && textblockAt(after, 'start', true) && textblockAt(before, 'end')) {
-        let at = before, wrap = [];
-        for (; ;) {
-            wrap.push(at);
-            if (at.isTextblock) break;
-            at = at.lastChild;
-        }
-        let afterText = after, afterDepth = 1;
-        for (; !afterText.isTextblock; afterText = afterText.firstChild) afterDepth++;
-        if (at.canReplace(at.childCount, at.childCount, afterText.content)) {
-            if (dispatch) {
-                let end = Fragment.empty;
-                for (let i = wrap.length - 1; i >= 0; i--) end = Fragment.from(wrap[i].copy(end));
-                let tr = state.tr.step(new ReplaceAroundStep($cut.pos - wrap.length, $cut.pos + after.nodeSize,
-                    $cut.pos + afterDepth, $cut.pos + after.nodeSize - afterDepth,
-                    new Slice(end, wrap.length, 0), 0, true));
-                dispatch(tr.scrollIntoView());
-            }
-            return true;
-        }
     }
 
     return false;
