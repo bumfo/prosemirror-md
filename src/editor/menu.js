@@ -150,22 +150,26 @@ export function createMenuItems(schema) {
         [
             blockTypeItem(schema.nodes.paragraph, {
                 icon: icons.paragraph,
-                title: 'Paragraph (Mod-Alt-0)'
+                title: 'Paragraph (Mod-Alt-0)',
+                enable: () => true,
             }),
             blockTypeItem(schema.nodes.heading, {
                 attrs: { level: 1 },
                 icon: icons.h1,
-                title: 'Heading 1 (Mod-Alt-1)'
+                title: 'Heading 1 (Mod-Alt-1)',
+                enable: () => true,
             }),
             blockTypeItem(schema.nodes.heading, {
                 attrs: { level: 2 },
                 icon: icons.h2,
-                title: 'Heading 2 (Mod-Alt-2)'
+                title: 'Heading 2 (Mod-Alt-2)',
+                enable: () => true,
             }),
             blockTypeItem(schema.nodes.heading, {
                 attrs: { level: 3 },
                 icon: icons.h3,
-                title: 'Heading 3 (Mod-Alt-3)'
+                title: 'Heading 3 (Mod-Alt-3)',
+                enable: () => true,
             }),
             blockTypeItem(schema.nodes.code_block, {
                 icon: icons.code_block,
