@@ -128,12 +128,12 @@ function customJoinBackward(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
  */
 export function customBackspace(schema) {
-    return (state, dispatch) => {
+    return (state, dispatch, view) => {
         if (!state.selection.empty) {
             return false;
         }
 
-        const atStart = atBlockStartOld(state);
+        const atStart = atBlockStart(state, view);
 
         // Only handle if at block start
         if (!atStart) {
