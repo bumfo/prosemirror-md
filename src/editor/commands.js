@@ -88,6 +88,7 @@ function doJoin(tr, $cut) {
         } else {
             let pos = findCutBefore(tr.doc.resolve(end));
             doJoin(tr, pos);
+            posAfter = tr.mapping.slice(steps).map(posAfter);
         }
     }
     let $joinAt = tr.doc.resolve(posAfter);
