@@ -74,6 +74,10 @@ function doJoin(tr, $cut) {
     if (extraMerge) {
         let pos = $cut.pos - 1;
         let depth = 1 + conn.length;
+        if (after.type.name === 'list_item') {
+            depth += 1;
+        }
+
         let steps = tr.steps.length
         let mapping = tr.mapping.slice(steps);
         let start = mapping.map(pos - depth);
@@ -81,6 +85,22 @@ function doJoin(tr, $cut) {
 
         let $start = tr.doc.resolve(start);
         let $end = tr.doc.resolve(end);
+
+        // console.log($start, $end);
+        //
+        // let path = $start.path;
+        // let paths = [];
+        // for (let i = path.length - 3; i >= 0; i -= 3) {
+        //     paths.push(path[i].type.name);
+        // }
+        // console.log('start', paths);
+        //
+        // path = $end.path;
+        // paths = [];
+        // for (let i = path.length - 3; i >= 0; i -= 3) {
+        //     paths.push(path[i].type.name);
+        // }
+        // console.log('end', paths);
 
         if ($start.parent && $end.parent && $start.parent.type.compatibleContent($end.parent.type)) {
             tr.step(new ReplaceStep(start, end, Slice.empty, true));
