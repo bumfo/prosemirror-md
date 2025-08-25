@@ -1,5 +1,5 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { toggleMark, setBlockType, wrapIn, lift, joinUp, selectParentNode } from 'prosemirror-commands';
+import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
@@ -7,49 +7,27 @@ import { keymap } from 'prosemirror-keymap';
 /**
  * Custom menu plugin for ProseMirror markdown editing
  * Provides a toolbar with essential markdown formatting options
+ *
+ * @fileoverview Custom menu system with optimized state management
+ * See menu.d.ts for complete type definitions
  */
 
 // Debug mode configuration (set to true to enable debug logging)
-const DEBUG_MENU = false;
-
-// Use original class names that match our existing CSS
-const prefix = "";
+const DEBUG_MENU = true;
 
 /**
- * Menu element interface - anything that can be rendered in a menu
- * @interface MenuElement
+ * @typedef {import('./menu.d.ts').MenuItem} MenuItem
+ * @typedef {import('./menu.d.ts').IconSpec} IconSpec
+ * @typedef {import('./menu.d.ts').MenuItemSpec} MenuItemSpec
  */
 
 /**
- * Icon specification - supports multiple formats
- * @typedef {Object} IconSpec
- * @property {string} [text] - Text-based icon content
- * @property {string} [css] - Additional CSS for text icons
- * @property {string} [html] - HTML content for the icon (legacy support)
- */
-
-/**
- * Menu item specification object
- * @typedef {Object} MenuItemSpec
- * @property {function} run - Command to execute when clicked
- * @property {function} [enable] - Function to check if item should be enabled
- * @property {function} [active] - Function to check if item should show as active
- * @property {function} [select] - Function to check if item should be visible
- * @property {IconSpec|string} [icon] - Icon specification or HTML string
- * @property {string} [label] - Text label for the item
- * @property {string|function} [title] - Tooltip text (can be function of state)
- * @property {string} [class] - Additional CSS class
- * @property {string} [css] - Additional CSS styles
- */
-
-/**
- * MenuItem class implementing the MenuElement interface
- * Similar to prosemirror-menu's MenuItem but adapted for our needs
+ * MenuItem class implementing our custom MenuElement interface
+ * Uses StateContext for optimized state checking
  */
 class MenuItem {
     /**
      * Create a menu item
-     * @param {MenuItemSpec} spec - The menu item specification
      */
     constructor(spec) {
         this.spec = spec;
@@ -116,7 +94,7 @@ class MenuItem {
         /**
          * Update function called on state changes
          * @param {EditorState} state - Current editor state
-         * @param {StateContext} context - Pre-computed state context
+         * @param {import('./menu.d.ts').StateContext} context - Pre-computed state context
          * @returns {boolean} True if item should be visible
          */
         // Cache for last states to avoid unnecessary DOM updates
@@ -178,9 +156,9 @@ function setClass(dom, cls, on) {
 
 /**
  * Combine multiple update functions into one
- * @param {Array<function>} updates - Array of update functions
+ * @param {Array<import('./menu.d.ts').RenderedMenuItem['update']>} updates - Array of update functions
  * @param {Array<HTMLElement>} nodes - Array of corresponding DOM nodes
- * @returns {function} Combined update function
+ * @returns {import('./menu.d.ts').RenderedGroup['update']} Combined update function
  */
 function combineUpdates(updates, nodes) {
     return (state, context) => {
@@ -196,9 +174,9 @@ function combineUpdates(updates, nodes) {
 
 /**
  * Render grouped menu elements with separators
- * @param {EditorView} view - Editor view
- * @param {Array<Array<MenuElement>>} content - Nested array of menu elements
- * @returns {Object} Object with dom and update function
+ * @param {import('prosemirror-view').EditorView} view - Editor view
+ * @param {MenuItem[][]} content - Nested array of menu elements
+ * @returns {import('./menu.d.ts').RenderedGroup} Object with dom and update function
  */
 function renderGrouped(view, content) {
     let result = document.createDocumentFragment();
@@ -252,6 +230,7 @@ function renderGrouped(view, content) {
 /**
  * StateContext - Pre-computes expensive state operations once per update
  * to avoid redundant computation across multiple menu items
+ * @implements {import('./menu.d.ts').StateContext}
  */
 class StateContext {
     constructor(state) {
@@ -363,12 +342,12 @@ class MenuView {
 
 /**
  * Helper function to create menu items with keyboard shortcuts
- * @param {IconSpec|string} icon - Icon specification or HTML string
+ * @param {import('./menu.d.ts').IconSpec|string} icon - Icon specification or HTML string
  * @param {string} title - Item title
- * @param {function} command - Command function
- * @param {function|null} [isActive] - Active state function
+ * @param {import('./menu.d.ts').CommandFn} command - Command function
+ * @param {import('./menu.d.ts').ActiveFn|null} [isActive] - Active state function
  * @param {string|null} [shortcut] - Keyboard shortcut
- * @param {function|null} [isEnabled] - Enable state function
+ * @param {import('./menu.d.ts').EnableFn|null} [isEnabled] - Enable state function
  * @returns {MenuItem} Menu item instance
  */
 function menuItem(icon, title, command, isActive = null, shortcut = null, isEnabled = null) {
@@ -403,7 +382,11 @@ function menuItem(icon, title, command, isActive = null, shortcut = null, isEnab
     return new MenuItem(spec);
 }
 
-// Custom toggle mark command that aligns with our active state logic
+/**
+ * Custom toggle mark command that aligns with our active state logic
+ * @param {import('prosemirror-model').MarkType} markType - Mark type to toggle
+ * @returns {import('./menu.d.ts').CommandFn} Toggle mark command
+ */
 function customToggleMark(markType) {
     return (state, dispatch, view) => {
         const { from, to, empty } = state.selection;
@@ -446,7 +429,11 @@ function customToggleMark(markType) {
     };
 }
 
-// Context-aware helper function to check if a mark is active
+/**
+ * Context-aware helper function to check if a mark is active
+ * @param {import('prosemirror-model').MarkType} markType - Mark type to check
+ * @returns {import('./menu.d.ts').ActiveFn} Active state function
+ */
 function markActive(markType) {
     // Capture markType in closure to avoid reference issues
     const type = markType;
@@ -456,7 +443,12 @@ function markActive(markType) {
     };
 }
 
-// Context-aware helper function to check if a block type is active
+/**
+ * Context-aware helper function to check if a block type is active
+ * @param {import('prosemirror-model').NodeType} nodeType - Node type to check
+ * @param {Object} [attrs={}] - Optional attributes to match
+ * @returns {import('./menu.d.ts').ActiveFn} Active state function
+ */
 function blockActive(nodeType, attrs = {}) {
     return (state, context) => {
         // Use pre-computed context for efficient checking
@@ -464,7 +456,11 @@ function blockActive(nodeType, attrs = {}) {
     };
 }
 
-// Helper function to prompt for link URL
+/**
+ * Helper function to prompt for link URL
+ * @param {import('prosemirror-model').MarkType} markType - Link mark type
+ * @returns {import('./menu.d.ts').CommandFn} Link command function
+ */
 function linkCommand(markType) {
     return (state, dispatch, view) => {
         if (state.selection.empty) return false;
@@ -499,7 +495,11 @@ function linkCommand(markType) {
     };
 }
 
-// Create menu items
+/**
+ * Create menu items for a given schema
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {MenuItem[][]} Grouped menu items
+ */
 export function createMenuItems(schema) {
     return [
         // Text formatting group
@@ -682,7 +682,11 @@ export function createMenuItems(schema) {
     ];
 }
 
-// Image insertion command
+/**
+ * Image insertion command
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('./menu.d.ts').CommandFn} Image insertion command
+ */
 function insertImageCommand(schema) {
     return (state, dispatch) => {
         // If dispatch is null, we're just checking if command is available
@@ -701,7 +705,11 @@ function insertImageCommand(schema) {
     };
 }
 
-// Hard break command (Shift+Enter)
+/**
+ * Hard break command (Shift+Enter)
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('./menu.d.ts').CommandFn} Hard break command
+ */
 function insertHardBreakCommand(schema) {
     return (state, dispatch) => {
         const { $from, $to } = state.selection;
@@ -715,7 +723,11 @@ function insertHardBreakCommand(schema) {
     };
 }
 
-// Clear formatting command
+/**
+ * Clear formatting command
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('./menu.d.ts').CommandFn} Clear formatting command
+ */
 function clearFormattingCommand(schema) {
     return (state, dispatch) => {
         const { from, to } = state.selection;
@@ -738,7 +750,11 @@ function clearFormattingCommand(schema) {
     };
 }
 
-// Insert table command (basic 3x3 table)
+/**
+ * Insert table command (basic 3x3 table)
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('./menu.d.ts').CommandFn} Table insertion command
+ */
 function insertTableCommand(schema) {
     return (state, dispatch) => {
         if (!dispatch) return true; // Just checking availability
@@ -751,7 +767,11 @@ function insertTableCommand(schema) {
     };
 }
 
-// Create keyboard shortcuts map
+/**
+ * Create keyboard shortcuts map
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('prosemirror-keymap').Keymap} Keymap plugin
+ */
 export function createKeymap(schema) {
     const keys = {};
     
@@ -792,7 +812,11 @@ export function createKeymap(schema) {
     return keymap(keys);
 }
 
-// Create the menu plugin
+/**
+ * Create the menu plugin
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('prosemirror-state').Plugin} Menu plugin
+ */
 export function menuPlugin(schema) {
     const menuItems = createMenuItems(schema);
     

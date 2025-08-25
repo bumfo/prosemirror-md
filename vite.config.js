@@ -66,7 +66,6 @@ export default defineConfig({
             'prosemirror-inputrules',
             'prosemirror-dropcursor',
             'prosemirror-gapcursor',
-            'prosemirror-menu',
             'markdown-it'
         ],
         
