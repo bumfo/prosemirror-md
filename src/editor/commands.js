@@ -1,29 +1,12 @@
-import {
-    canJoin,
-    liftTarget,
-    ReplaceAroundStep,
-    Transform,
-
-} from 'prosemirror-transform';
-import { Selection } from 'prosemirror-state';
-import { Slice, Fragment } from 'prosemirror-model';
-import { lift, joinBackward, selectNodeBackward } from 'prosemirror-commands';
+import { canJoin, ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
+import { Fragment, Slice } from 'prosemirror-model';
+import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
 import { liftListItem } from 'prosemirror-schema-list';
 
 /**
  * Debug flag for command logging
  */
-const DEBUG = false;
-
-/**
- * Check if cursor is at the start of a block (legacy version)
- * @param {import('prosemirror-state').EditorState} state - Editor state
- * @returns {boolean} True if at block start
- */
-function atBlockStartOld(state) {
-    const { $from, to } = state.selection;
-    return to <= $from.end() && $from.parentOffset === 0;
-}
+const DEBUG = true;
 
 // Helper functions from prosemirror-commands (exact copies)
 function atBlockStart(state, view) {
@@ -41,14 +24,6 @@ function findCutBefore($pos) {
     return null;
 }
 
-function textblockAt(node, side, only = false) {
-    for (let scan = node; scan; scan = (side === 'start' ? scan.firstChild : scan.lastChild)) {
-        if (scan.isTextblock) return true;
-        if (only && scan.childCount !== 1) return false;
-    }
-    return false;
-}
-
 function deleteBarrier(state, $cut, dispatch, dir) {
     if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
@@ -64,38 +39,66 @@ function deleteBarrier(state, $cut, dispatch, dir) {
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
     if (!canDelAfter) return false;
-    let match = before.contentMatchAt(before.childCount);
-    let conn = match.findWrapping(after.type);
-    if (!conn) return false;
+    let tr = doJoin(state, $cut)
 
-    if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
-
-    const extraMerge = true;
-
-    if (match.matchType(conn[0] || after.type).validEnd) {
-        if (DEBUG) console.log('wrap', conn.map(x => x.name));
-        if (dispatch) {
-            let end = $cut.pos + after.nodeSize, wrap = Fragment.empty;
-            for (let i = conn.length - 1; i >= 0; i--)
-                wrap = Fragment.from(conn[i].create(null, wrap));
-            wrap = Fragment.from(before.copy(wrap));
-            let tr = state.tr.step(new ReplaceAroundStep($cut.pos - 1, end, $cut.pos, end, new Slice(wrap, 1, 0), conn.length, true));
-            let posAfter = end + 2 * conn.length;
-            if (extraMerge) {
-                let depth = 1 + conn.length;
-                let mapping= new Transform(tr.doc).join($cut.pos - 1, depth).mapping;
-                tr = tr.join($cut.pos - 1, depth);
-                posAfter = mapping.map(posAfter);
-            }
-            let $joinAt = tr.doc.resolve(posAfter);
-            if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
-                canJoin(tr.doc, $joinAt.pos)) tr.join($joinAt.pos);
-            dispatch(tr.scrollIntoView());
-        }
+    if (dispatch && tr !== null) {
+        dispatch(tr.scrollIntoView());
         return true;
     }
 
     return false;
+}
+
+function doJoin(state, $cut) {
+    const extraMerge = true;
+
+    let before = $cut.nodeBefore, after = $cut.nodeAfter;
+
+    let match = before.contentMatchAt(before.childCount);
+    let conn = match.findWrapping(after.type);
+    if (!conn) return null;
+    if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
+
+    if (!match.matchType(conn[0] || after.type).validEnd) return null;
+
+    if (DEBUG) console.log('wrap', conn.map(x => x.name));
+
+    let end = $cut.pos + after.nodeSize, wrap = Fragment.empty;
+    for (let i = conn.length - 1; i >= 0; i--)
+        wrap = Fragment.from(conn[i].create(null, wrap));
+    wrap = Fragment.from(before.copy(wrap));
+    let tr = state.tr.step(new ReplaceAroundStep($cut.pos - 1, end, $cut.pos, end, new Slice(wrap, 1, 0), conn.length, true));
+    let posAfter = end + 2 * conn.length;
+    if (extraMerge) {
+        let pos = $cut.pos - 1;
+        let depth = 1 + conn.length;
+        let steps = tr.steps.length
+        let mapping = tr.mapping.slice(steps);
+        let start = mapping.map(pos - depth);
+        let end = mapping.map(pos + depth, -1);
+
+        try {
+            tr.doc.replace(start, end, Slice.empty);
+
+            if (canJoin(tr.doc, pos)) {
+                console.log('ReplaceStep', pos - depth, pos + depth, start, end);
+
+                // console.log(tr.doc, newDoc);
+                let $start = tr.doc.resolve(start)
+                let $end = tr.doc.resolve(end)
+                console.log($start.parent.toString(), $start, $end.parent.toString(), $end);
+
+                tr.step(new ReplaceStep(start, end, Slice.empty, true));
+                posAfter = tr.mapping.slice(steps).map(posAfter);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    let $joinAt = tr.doc.resolve(posAfter);
+    if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
+        canJoin(tr.doc, $joinAt.pos)) tr.join($joinAt.pos);
+    return tr
 }
 
 /**
