@@ -1,4 +1,4 @@
-import { setBlockType, wrapIn, lift, joinBackward, selectNodeBackward } from 'prosemirror-commands';
+import { setBlockType, wrapIn, lift, joinBackward, selectNodeBackward, autoJoin } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
@@ -347,6 +347,83 @@ function atBlockStart(state) {
 }
 
 /**
+ * Custom join backward that handles list items and blockquotes specially
+ * When joining paragraph into li/blockquote, merge into last paragraph child
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('../menu/menu.d.ts').CommandFn} Custom join backward command
+ */
+function customJoinBackward(schema) {
+    return (state, dispatch) => {
+        const { $from } = state.selection;
+        
+        // Only handle when cursor is at start of paragraph
+        if ($from.parent.type !== schema.nodes.paragraph || $from.parentOffset !== 0) {
+            return false;
+        }
+        
+        // Look at the position just before this paragraph
+        const beforePos = $from.before() - 1;
+        if (beforePos < 0) return false;
+        
+        const $before = state.doc.resolve(beforePos);
+        const beforeNode = $before.nodeAfter;
+        
+        if (!beforeNode) return false;
+        
+        if (DEBUG) console.log('customJoinBackward: beforeNode type:', beforeNode.type.name);
+        
+        // Check if the previous node is a list_item or blockquote
+        let targetContainer = null;
+        let targetContainerPos = null;
+        
+        if (beforeNode.type === schema.nodes.list_item || 
+            beforeNode.type === schema.nodes.blockquote) {
+            targetContainer = beforeNode;
+            targetContainerPos = beforePos + 1; // Position of the container node
+        } else {
+            return false; // Not handling other cases
+        }
+        
+        if (DEBUG) console.log('customJoinBackward: target container:', targetContainer.type.name);
+        
+        // Find the last paragraph in the target container
+        let lastParagraph = null;
+        let lastParagraphPos = null;
+        
+        targetContainer.forEach((child, offset) => {
+            if (child.type === schema.nodes.paragraph) {
+                lastParagraph = child;
+                lastParagraphPos = targetContainerPos + offset;
+            }
+        });
+        
+        if (!lastParagraph) {
+            if (DEBUG) console.log('customJoinBackward: no paragraph found in container');
+            return false;
+        }
+        
+        if (!dispatch) return true; // Just checking availability
+        
+        if (DEBUG) console.log('customJoinBackward: merging into last paragraph at pos', lastParagraphPos);
+        
+        const tr = state.tr;
+        const currentNode = $from.parent;
+        
+        // Insert current paragraph's content at end of last paragraph
+        const insertPos = lastParagraphPos + lastParagraph.content.size;
+        tr.insert(insertPos, currentNode.content);
+        
+        // Delete the current paragraph node
+        const deleteStart = $from.before();
+        const deleteEnd = $from.after();
+        tr.delete(deleteStart, deleteEnd);
+        
+        dispatch(tr);
+        return true;
+    };
+}
+
+/**
  * Custom backspace command that resets block to paragraph first
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
@@ -385,10 +462,22 @@ function customBackspace(schema) {
             if (lift(state, dispatch)) {
                 return true;
             }
-            if (DEBUG) console.log('joinBackward');
+            if (DEBUG) console.log('customJoinBackward');
+            if (customJoinBackward(schema)(state, dispatch)) {
+                return true;
+            }
+            if (DEBUG) console.log('joinBackward fallback');
             if (joinBackward(state, dispatch)) {
                 return true;
             }
+
+            // if (autoJoin(joinBackward, (before, after) => {
+            //     console.log(before.toString(), after.toString(), after.nodeAt(0), parent.toString());
+            //     return after.nodeAt(0)?.eq(parent);
+            // })(state, dispatch)) {
+            //     return true;
+            // }
+
             if (DEBUG) console.log('selectNodeBackward');
             if (selectNodeBackward(state, dispatch)) {
                 return true;
