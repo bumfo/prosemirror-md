@@ -10,7 +10,7 @@ import { keymap } from 'prosemirror-keymap';
  */
 
 // Debug mode configuration (set to true to enable debug logging)
-const DEBUG_MENU = false;
+const DEBUG_MENU = true;
 
 // Use original class names that match our existing CSS
 const prefix = "";
@@ -279,73 +279,110 @@ class MenuView {
     
     createStateSignature(state) {
         const { from, to, empty } = state.selection;
-        
-        // Include the parent node type for block-level context
         const $from = state.doc.resolve(from);
-        const parentType = $from.parent.type.name;
         
-        // Include history state for undo/redo button updates
-        let historyState = '';
-        try {
-            // Try to get history state using the history plugin key
-            const historyPlugin = state.plugins.find(plugin => {
-                return plugin.spec && plugin.spec.key && 
-                       (plugin.spec.key === 'history' || plugin.spec.key.key === 'history');
-            });
-            
-            if (historyPlugin) {
-                const history = historyPlugin.getState(state);
-                if (history && history.done && history.undone) {
-                    historyState = `${history.done.length}-${history.undone.length}`;
-                }
-            } else {
-                // Fallback: try to detect history changes by testing undo/redo availability
-                const canUndo = undo(state);
-                const canRedo = redo(state);
-                historyState = `${canUndo ? '1' : '0'}-${canRedo ? '1' : '0'}`;
-            }
-        } catch (e) {
-            if (DEBUG_MENU) console.warn('History state detection failed:', e);
-            // Last resort: use document change count as proxy
-            historyState = `doc-${state.doc.content.size}`;
-        }
-        
+        // Create a comprehensive state object that captures ALL relevant state
+        // BUT exclude position details that don't affect menu state
+        const stateObj = {
+            selection: {
+                // Only include whether selection is empty (affects mark behavior)
+                empty,
+                // Include complete parent node information
+                parentNode: {
+                    type: $from.parent.type.name,
+                    // Include ALL attributes - this ensures heading levels, alignment, etc. are captured
+                    attrs: $from.parent.attrs || {}
+                },
+                // Only include selection range if it crosses block boundaries (affects block commands)
+                // This avoids updates on every cursor movement within the same block
+                crossesBlocks: empty ? false : (to > $from.end() || from < $from.start())
+            },
+            // Capture marks with their attributes (e.g., link hrefs)
+            marks: this.getSelectionMarks(state, from, to, empty, $from),
+            // Include history state for undo/redo
+            history: this.getHistoryState(state)
+        };
+
+        // Use JSON.stringify for deterministic serialization
+        // This ensures ANY change in state will be detected
+        return JSON.stringify(stateObj);
+    }
+
+    getSelectionMarks(state, from, to, empty, $from) {
         if (empty) {
             // For collapsed selections, track both stored marks and position marks
-            let markTypes;
-            if (state.storedMarks) {
-                markTypes = state.storedMarks.map(mark => mark.type.name).sort().join(',');
-            } else {
-                markTypes = $from.marks().map(mark => mark.type.name).sort().join(',');
-            }
-            return `collapsed-${parentType}-${markTypes}-${historyState}`;
+            const marks = state.storedMarks || $from.marks();
+            return marks.map(mark => ({
+                type: mark.type.name,
+                attrs: mark.attrs || {}
+            }));
         } else {
             // For selections, track marks that are present throughout the ENTIRE selection
-            const markTypes = new Set();
+            const markMap = new Map();
             let firstTextNode = true;
             
             state.doc.nodesBetween(from, to, (node) => {
                 if (node.isText && node.text.length > 0) {
-                    const nodeMarkTypes = new Set(node.marks.map(mark => mark.type.name));
+                    const nodeMarks = new Map();
+                    node.marks.forEach(mark => {
+                        nodeMarks.set(mark.type.name, mark.attrs || {});
+                    });
                     
                     if (firstTextNode) {
                         // Initialize with marks from first text node
-                        nodeMarkTypes.forEach(markType => markTypes.add(markType));
+                        nodeMarks.forEach((attrs, type) => {
+                            markMap.set(type, attrs);
+                        });
                         firstTextNode = false;
                     } else {
                         // Keep only marks that exist in ALL text nodes (intersection)
-                        for (let markType of markTypes) {
-                            if (!nodeMarkTypes.has(markType)) {
-                                markTypes.delete(markType);
+                        for (let [type, attrs] of markMap) {
+                            if (!nodeMarks.has(type) ||
+                                JSON.stringify(nodeMarks.get(type)) !== JSON.stringify(attrs)) {
+                                markMap.delete(type);
                             }
                         }
                     }
                 }
             });
             
-            const marksSignature = Array.from(markTypes).sort().join(',');
+            // Convert to array format for JSON serialization
+            return Array.from(markMap.entries()).map(([type, attrs]) => ({
+                type,
+                attrs
+            })).sort((a, b) => a.type.localeCompare(b.type));
+        }
+    }
+
+    getHistoryState(state) {
+        try {
+            // Try to get history state using the history plugin key
+            const historyPlugin = state.plugins.find(plugin => {
+                return plugin.spec && plugin.spec.key &&
+                       (plugin.spec.key === 'history' || plugin.spec.key.key === 'history');
+            });
             
-            return `${from}-${to}-${marksSignature}-${parentType}-${historyState}`;
+            if (historyPlugin) {
+                const history = historyPlugin.getState(state);
+                if (history && history.done && history.undone) {
+                    return {
+                        done: history.done.length,
+                        undone: history.undone.length
+                    };
+                }
+            }
+
+            // Fallback: try to detect history changes by testing undo/redo availability
+            return {
+                canUndo: undo(state),
+                canRedo: redo(state)
+            };
+        } catch (e) {
+            if (DEBUG_MENU) console.warn('History state detection failed:', e);
+            // Last resort: use document size as proxy
+            return {
+                docSize: state.doc.content.size
+            };
         }
     }
     
