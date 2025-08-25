@@ -565,122 +565,99 @@ export function createMenuItems(schema) {
     return [
         // Text formatting group
         [
-            menuItem(
-                icons.bold,
-                'Bold',
-                customToggleMark(schema.marks.strong),
-                markActive(schema.marks.strong),
-                'Mod-b'
-            ),
-            menuItem(
-                icons.itallic,
-                'Italic',
-                customToggleMark(schema.marks.em),
-                markActive(schema.marks.em),
-                'Mod-i'
-            ),
-            menuItem(
-                icons.code,
-                'Code',
-                customToggleMark(schema.marks.code),
-                markActive(schema.marks.code),
-                'Mod-`'
-            ),
-            menuItem(
-                icons.link,
-                'Link',
-                linkCommand(schema.marks.link),
-                markActive(schema.marks.link),
-                'Mod-k'
-            )
+            markItem(schema.marks.strong, {
+                icon: icons.bold,
+                title: 'Bold (Mod-b)'
+            }),
+            markItem(schema.marks.em, {
+                icon: icons.itallic,
+                title: 'Italic (Mod-i)'
+            }),
+            markItem(schema.marks.code, {
+                icon: icons.code,
+                title: 'Code (Mod-`)'
+            }),
+            new MenuItem({
+                icon: icons.link,
+                title: 'Link (Mod-k)',
+                run: linkCommand(schema.marks.link),
+                active: markActive(schema.marks.link)
+            })
         ],
 
         // Block types group
         [
-            menuItem(
-                icons.paragraph,
-                'Paragraph',
-                setBlockType(schema.nodes.paragraph),
-                blockActive(schema.nodes.paragraph),
-                'Mod-Alt-0'
-            ),
-            menuItem(
-                icons.h1,
-                'Heading 1',
-                setBlockType(schema.nodes.heading, {level: 1}),
-                blockActive(schema.nodes.heading, {level: 1}),
-                'Mod-Alt-1'
-            ),
-            menuItem(
-                icons.h2,
-                'Heading 2',
-                setBlockType(schema.nodes.heading, {level: 2}),
-                blockActive(schema.nodes.heading, {level: 2}),
-                'Mod-Alt-2'
-            ),
-            menuItem(
-                icons.h3,
-                'Heading 3',
-                setBlockType(schema.nodes.heading, {level: 3}),
-                blockActive(schema.nodes.heading, {level: 3}),
-                'Mod-Alt-3'
-            ),
-            menuItem(
-                icons.code_block,
-                'Code block',
-                setBlockType(schema.nodes.code_block)
-            )
+            blockTypeItem(schema.nodes.paragraph, {
+                icon: icons.paragraph,
+                title: 'Paragraph (Mod-Alt-0)'
+            }),
+            blockTypeItem(schema.nodes.heading, {
+                attrs: { level: 1 },
+                icon: icons.h1,
+                title: 'Heading 1 (Mod-Alt-1)'
+            }),
+            blockTypeItem(schema.nodes.heading, {
+                attrs: { level: 2 },
+                icon: icons.h2,
+                title: 'Heading 2 (Mod-Alt-2)'
+            }),
+            blockTypeItem(schema.nodes.heading, {
+                attrs: { level: 3 },
+                icon: icons.h3,
+                title: 'Heading 3 (Mod-Alt-3)'
+            }),
+            blockTypeItem(schema.nodes.code_block, {
+                icon: icons.code_block,
+                title: 'Code block'
+            })
         ],
 
         // Block wrappers group
         [
-            menuItem(
-                icons.blockquote,
-                'Blockquote',
-                wrapIn(schema.nodes.blockquote)
-            ),
-            menuItem(
-                icons.bullet_list,
-                'Bullet list',
-                wrapInList(schema.nodes.bullet_list)
-            ),
-            menuItem(
-                icons.ordered_list,
-                'Ordered list',
-                wrapInList(schema.nodes.ordered_list)
-            )
+            wrapItem(schema.nodes.blockquote, {
+                icon: icons.blockquote,
+                title: 'Blockquote'
+            }),
+            new MenuItem({
+                icon: icons.bullet_list,
+                title: 'Bullet list',
+                run: wrapInList(schema.nodes.bullet_list),
+                enable: (state) => wrapInList(schema.nodes.bullet_list)(state)
+            }),
+            new MenuItem({
+                icon: icons.ordered_list,
+                title: 'Ordered list',
+                run: wrapInList(schema.nodes.ordered_list),
+                enable: (state) => wrapInList(schema.nodes.ordered_list)(state)
+            })
         ],
 
         // Actions group
         [
-            menuItem(
-                icons.undo,
-                'Undo',
-                undo,
-                null,
-                'Mod-z',
-                state => {
+            new MenuItem({
+                icon: icons.undo,
+                title: 'Undo (Mod-z)',
+                run: undo,
+                enable: (state) => {
                     const canUndo = undo(state);
                     if (DEBUG_MENU) console.log('Undo enable check:', canUndo);
                     return canUndo;
                 }
-            ),
-            menuItem(
-                icons.redo,
-                'Redo',
-                redo,
-                null,
-                'Mod-Shift-z',
-                state => {
+            }),
+            new MenuItem({
+                icon: icons.redo,
+                title: 'Redo (Mod-Shift-z)',
+                run: redo,
+                enable: (state) => {
                     const canRedo = redo(state);
                     if (DEBUG_MENU) console.log('Redo enable check:', canRedo);
                     return canRedo;
                 }
-            ),
-            menuItem(
-                icons.h_rule,
-                'Horizontal rule',
-                (state, dispatch) => {
+            }),
+            new MenuItem({
+                icon: icons.h_rule,
+                title: 'Horizontal rule',
+                run: (state, dispatch) => {
                     if (dispatch) {
                         const {tr} = state;
                         const node = schema.nodes.horizontal_rule.create();
@@ -688,31 +665,27 @@ export function createMenuItems(schema) {
                     }
                     return true;
                 }
-            ),
-            menuItem(
-                icons.image,
-                'Insert image',
-                insertImageCommand(schema)
-            ),
-            menuItem(
-                icons.hard_break,
-                'Hard break',
-                insertHardBreakCommand(schema),
-                null,
-                'Shift-Enter'
-            ),
-            menuItem(
-                icons.clear_formatting,
-                'Clear formatting',
-                clearFormattingCommand(schema),
-                null,
-                'Mod-\\'
-            ),
-            menuItem(
-                icons.table,
-                'Insert table',
-                insertTableCommand(schema)
-            )
+            }),
+            new MenuItem({
+                icon: icons.image,
+                title: 'Insert image',
+                run: insertImageCommand(schema)
+            }),
+            new MenuItem({
+                icon: icons.hard_break,
+                title: 'Hard break (Shift-Enter)',
+                run: insertHardBreakCommand(schema)
+            }),
+            new MenuItem({
+                icon: icons.clear_formatting,
+                title: 'Clear formatting (Mod-\\)',
+                run: clearFormattingCommand(schema)
+            }),
+            new MenuItem({
+                icon: icons.table,
+                title: 'Insert table',
+                run: insertTableCommand(schema)
+            })
         ]
     ];
 }
