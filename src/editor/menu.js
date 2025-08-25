@@ -79,6 +79,26 @@ export function menuItem(icon, title, command, isActive = null, shortcut = null,
 }
 
 /**
+ * Create menu item for custom commands with optional enable/active functions
+ * @param {CommandFn} command - Command function to execute
+ * @param {Partial<MenuItemSpec>} options - Menu item options (excluding run)
+ * @returns {MenuItem} Menu item instance
+ */
+function cmdItem(command, options) {
+    const spec = {
+        run: command,
+        ...options
+    };
+
+    // If no enable function provided, use command itself to check availability
+    if (!spec.enable) {
+        spec.enable = (state) => command(state);
+    }
+
+    return new MenuItem(spec);
+}
+
+/**
  * Helper function to prompt for link URL
  * @param {import('prosemirror-model').MarkType} markType - Link mark type
  * @returns {import('../menu/menu.d.ts').CommandFn} Link command function
@@ -138,10 +158,9 @@ export function createMenuItems(schema) {
                 icon: icons.code,
                 title: 'Code (Mod-`)'
             }),
-            new MenuItem({
+            cmdItem(linkCommand(schema.marks.link), {
                 icon: icons.link,
                 title: 'Link (Mod-k)',
-                run: linkCommand(schema.marks.link),
                 active: markActive(schema.marks.link)
             })
         ],
@@ -183,73 +202,52 @@ export function createMenuItems(schema) {
                 icon: icons.blockquote,
                 title: 'Blockquote'
             }),
-            new MenuItem({
+            cmdItem(wrapInList(schema.nodes.bullet_list), {
                 icon: icons.bullet_list,
-                title: 'Bullet list',
-                run: wrapInList(schema.nodes.bullet_list),
-                enable: (state) => wrapInList(schema.nodes.bullet_list)(state)
+                title: 'Bullet list'
             }),
-            new MenuItem({
+            cmdItem(wrapInList(schema.nodes.ordered_list), {
                 icon: icons.ordered_list,
-                title: 'Ordered list',
-                run: wrapInList(schema.nodes.ordered_list),
-                enable: (state) => wrapInList(schema.nodes.ordered_list)(state)
+                title: 'Ordered list'
             })
         ],
 
         // Actions group
         [
-            new MenuItem({
+            cmdItem(undo, {
                 icon: icons.undo,
-                title: 'Undo (Mod-z)',
-                run: undo,
-                enable: (state) => {
-                    const canUndo = undo(state);
-                    if (DEBUG_MENU) console.log('Undo enable check:', canUndo);
-                    return canUndo;
-                }
+                title: 'Undo (Mod-z)'
             }),
-            new MenuItem({
+            cmdItem(redo, {
                 icon: icons.redo,
-                title: 'Redo (Mod-Shift-z)',
-                run: redo,
-                enable: (state) => {
-                    const canRedo = redo(state);
-                    if (DEBUG_MENU) console.log('Redo enable check:', canRedo);
-                    return canRedo;
-                }
+                title: 'Redo (Mod-Shift-z)'
             }),
-            new MenuItem({
+            cmdItem((state, dispatch) => {
+                if (dispatch) {
+                    const { tr } = state;
+                    const node = schema.nodes.horizontal_rule.create();
+                    dispatch(tr.replaceSelectionWith(node));
+                }
+                return true;
+            }, {
                 icon: icons.h_rule,
-                title: 'Horizontal rule',
-                run: (state, dispatch) => {
-                    if (dispatch) {
-                        const { tr } = state;
-                        const node = schema.nodes.horizontal_rule.create();
-                        dispatch(tr.replaceSelectionWith(node));
-                    }
-                    return true;
-                }
+                title: 'Horizontal rule'
             }),
-            new MenuItem({
+            cmdItem(insertImageCommand(schema), {
                 icon: icons.image,
-                title: 'Insert image',
-                run: insertImageCommand(schema)
+                title: 'Insert image'
             }),
-            new MenuItem({
+            cmdItem(insertHardBreakCommand(schema), {
                 icon: icons.hard_break,
-                title: 'Hard break (Shift-Enter)',
-                run: insertHardBreakCommand(schema)
+                title: 'Hard break (Shift-Enter)'
             }),
-            new MenuItem({
+            cmdItem(clearFormattingCommand(schema), {
                 icon: icons.clear_formatting,
-                title: 'Clear formatting (Mod-\\\\)',
-                run: clearFormattingCommand(schema)
+                title: 'Clear formatting (Mod-\\\\)'
             }),
-            new MenuItem({
+            cmdItem(insertTableCommand(schema), {
                 icon: icons.table,
-                title: 'Insert table',
-                run: insertTableCommand(schema)
+                title: 'Insert table'
             })
         ]
     ];
