@@ -9,6 +9,7 @@ import { markdownSchema } from '../markdown/schema.js';
 import { parseMarkdown } from '../markdown/parser.js';
 import { serializeMarkdown } from '../markdown/serializer.js';
 import { menuPlugin, createKeymap } from './menu.js';
+import { createInputRules } from './inputrules.js';
 
 /**
  * ProseMirror-based WYSIWYG view for markdown editing
@@ -46,6 +47,9 @@ export class ProseMirrorView {
                 keymap(baseKeymap),
                 dropCursor(),
                 gapCursor(),
+                
+                // Markdown input rules for smart typing
+                createInputRules(),
                 
                 // Custom keyboard shortcuts
                 createKeymap(markdownSchema),
