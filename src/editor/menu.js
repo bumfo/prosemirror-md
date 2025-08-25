@@ -118,28 +118,43 @@ class MenuItem {
          * @param {EditorState} state - Current editor state
          * @returns {boolean} True if item should be visible
          */
+        // Cache for last states to avoid unnecessary DOM updates
+        let lastVisible = null;
+        let lastEnabled = null;
+        let lastActive = null;
+        
         function update(state) {
             // Handle visibility (select function)
+            let visible = true;
             if (spec.select) {
-                let selected = spec.select(state);
-                dom.style.display = selected ? '' : 'none';
-                if (!selected) return false;
+                visible = spec.select(state);
+                if (visible !== lastVisible) {
+                    dom.style.display = visible ? '' : 'none';
+                    lastVisible = visible;
+                }
+                if (!visible) return false;
             }
 
             // Handle enabled state
             let enabled = true;
             if (spec.enable) {
                 enabled = spec.enable(state) || false;
-                setClass(dom, 'disabled', !enabled);
+                if (enabled !== lastEnabled) {
+                    setClass(dom, 'disabled', !enabled);
+                    lastEnabled = enabled;
+                }
             }
 
             // Handle active state
             if (spec.active) {
                 let active = enabled && spec.active(state) || false;
-                setClass(dom, 'active', active);
+                if (active !== lastActive) {
+                    setClass(dom, 'active', active);
+                    lastActive = active;
+                }
             }
 
-            return true;
+            return visible;
         }
 
         return { dom, update };
@@ -249,80 +264,13 @@ class MenuView {
         
         // Menu items handle their own clicks now
         
-        // Store last relevant state to avoid unnecessary DOM updates
-        this.lastRelevantState = null;
-        
         this.update();
     }
     
     update() {
+        // Simply update all menu items - they handle their own state optimization
         const state = this.editorView.state;
-        
-        // Create a minimal state signature that only includes what affects menu appearance
-        const relevantState = this.getRelevantState(state);
-        
-        // Only update if something that affects the menu has changed
-        if (relevantState !== this.lastRelevantState) {
-            if (DEBUG_MENU) console.log('Menu update needed - state changed');
-            this.lastRelevantState = relevantState;
-            this.contentUpdate(state);
-        } else {
-            if (DEBUG_MENU) console.log('Menu update skipped - no relevant changes');
-        }
-    }
-    
-    getRelevantState(state) {
-        const { from, to, empty } = state.selection;
-        const $from = state.doc.resolve(from);
-        
-        // Only track state that actually affects menu button appearance
-        const relevantState = {
-            // Parent node type and attributes (for block buttons like headings)
-            parentNode: {
-                type: $from.parent.type.name,
-                attrs: $from.parent.attrs || {}
-            },
-            // Whether selection is empty (affects mark toggle behavior)
-            empty,
-            // Marks at cursor position or in selection
-            marks: this.getRelevantMarks(state, from, to, empty, $from),
-            // Whether selection crosses blocks (affects some commands)
-            crossesBlocks: !empty && (to > $from.end() || from < $from.start()),
-            // History state for undo/redo buttons
-            canUndo: undo(state),
-            canRedo: redo(state)
-        };
-
-        return JSON.stringify(relevantState);
-    }
-
-    getRelevantMarks(state, from, to, empty, $from) {
-        if (empty) {
-            // For collapsed cursor, get marks at position
-            const marks = state.storedMarks || $from.marks();
-            return marks.map(m => ({ type: m.type.name, attrs: m.attrs })).sort((a, b) => a.type.localeCompare(b.type));
-        } else {
-            // For selection, get marks present throughout entire selection
-            const marks = [];
-            let first = true;
-            state.doc.nodesBetween(from, to, node => {
-                if (node.isText) {
-                    if (first) {
-                        marks.push(...node.marks.map(m => ({ type: m.type.name, attrs: m.attrs })));
-                        first = false;
-                    } else {
-                        // Keep only marks present in all text nodes
-                        for (let i = marks.length - 1; i >= 0; i--) {
-                            const mark = marks[i];
-                            if (!node.marks.some(m => m.type.name === mark.type && JSON.stringify(m.attrs) === JSON.stringify(mark.attrs))) {
-                                marks.splice(i, 1);
-                            }
-                        }
-                    }
-                }
-            });
-            return marks.sort((a, b) => a.type.localeCompare(b.type));
-        }
+        this.contentUpdate(state);
     }
     
     destroy() {
