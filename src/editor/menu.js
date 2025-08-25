@@ -1,4 +1,4 @@
-import { setBlockType, wrapIn, chainCommands } from 'prosemirror-commands';
+import { setBlockType, wrapIn, lift, joinBackward, selectNodeBackward } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
@@ -31,6 +31,8 @@ import {
  * @typedef {import('../menu/menu.d.ts').EnableFn} EnableFn
  * @typedef {import('../menu/menu.d.ts').StateContext} StateContext
  */
+
+const DEBUG = true;
 
 /**
  * Create menu item with keyboard shortcut (legacy helper for backward compatibility)
@@ -351,15 +353,47 @@ function atBlockStart(state) {
  */
 function customBackspace(schema) {
     return (state, dispatch) => {
+        if (!state.selection.empty) {
+            return false;
+        }
+
+        const atStart = atBlockStart(state);
+
         // Only handle if at block start
-        if (!atBlockStart(state)) return false;
+        if (!atStart) {
+            if (DEBUG) console.log('skip not atStart');
+            return false;
+        }
 
         const { $from } = state.selection;
         const parent = $from.parent;
 
-        // If already a paragraph, let default backspace handle it
+        // If already a paragraph, try various backspace behaviors
         if (parent.type === schema.nodes.paragraph) {
-            return false;
+            if (DEBUG) console.log('already paragraph');
+
+            // Check if we're in a list item and try to lift it first
+            const grandparent = $from.node($from.depth - 1);
+            if (grandparent && grandparent.type === schema.nodes.list_item) {
+                if (DEBUG) console.log('in list item, trying liftListItem');
+                if (liftListItem(schema.nodes.list_item)(state, dispatch)) {
+                    return true;
+                }
+            }
+
+            if (DEBUG) console.log('lift');
+            if (lift(state, dispatch)) {
+                return true;
+            }
+            if (DEBUG) console.log('joinBackward');
+            if (joinBackward(state, dispatch)) {
+                return true;
+            }
+            if (DEBUG) console.log('selectNodeBackward');
+            if (selectNodeBackward(state, dispatch)) {
+                return true;
+            }
+            return true;
         }
 
         // Reset block to paragraph
