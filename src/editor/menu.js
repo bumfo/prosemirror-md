@@ -1,4 +1,4 @@
-import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
+import { setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
@@ -9,7 +9,6 @@ import {
     wrapItem,
     customToggleMark,
     markActive,
-    blockActive,
     menuBar,
     icons
 } from '../menu/index.js';
@@ -20,9 +19,6 @@ import {
  *
  * @fileoverview Editor-specific menu configuration
  */
-
-// Debug mode configuration
-const DEBUG_MENU = false;
 
 /**
  * @typedef {import('prosemirror-view').EditorView} EditorView
