@@ -358,68 +358,150 @@ function customJoinBackward(schema) {
         
         // Only handle when cursor is at start of paragraph
         if ($from.parent.type !== schema.nodes.paragraph || $from.parentOffset !== 0) {
+            if (DEBUG) console.log('customJoinBackward: not at start of paragraph');
             return false;
         }
         
-        // Look at the position just before this paragraph
-        const beforePos = $from.before() - 1;
-        if (beforePos < 0) return false;
-        
-        const $before = state.doc.resolve(beforePos);
-        const beforeNode = $before.nodeAfter;
-        
-        if (!beforeNode) return false;
-        
-        if (DEBUG) console.log('customJoinBackward: beforeNode type:', beforeNode.type.name);
-        
-        // Check if the previous node is a list_item or blockquote
-        let targetContainer = null;
-        let targetContainerPos = null;
-        
-        if (beforeNode.type === schema.nodes.list_item || 
-            beforeNode.type === schema.nodes.blockquote) {
-            targetContainer = beforeNode;
-            targetContainerPos = beforePos + 1; // Position of the container node
-        } else {
-            return false; // Not handling other cases
+        const joinPos = $from.before();
+        if (joinPos <= 0) {
+            if (DEBUG) console.log('customJoinBackward: joinPos <= 0');
+            return false;
         }
         
-        if (DEBUG) console.log('customJoinBackward: target container:', targetContainer.type.name);
+        const $before = state.doc.resolve(joinPos - 1);
         
-        // Find the last paragraph in the target container
-        let lastParagraph = null;
-        let lastParagraphPos = null;
+        if (DEBUG) {
+            console.log('customJoinBackward: analyzing structure at pos', joinPos - 1);
+            console.log('  $before.nodeBefore:', $before.nodeBefore?.type.name);
+            console.log('  $before.nodeAfter:', $before.nodeAfter?.type.name);
+            console.log('  $before.parent:', $before.parent.type.name);
+            console.log('  $before.depth:', $before.depth);
+        }
         
-        targetContainer.forEach((child, offset) => {
-            if (child.type === schema.nodes.paragraph) {
-                lastParagraph = child;
-                lastParagraphPos = targetContainerPos + offset;
+        // Check if we can join with the previous node
+        const prevNode = $before.nodeBefore;
+        if (!prevNode) {
+            if (DEBUG) console.log('customJoinBackward: no previous node');
+            return false;
+        }
+        
+        // Handle joining with list items - we need to find the end position of the last paragraph in the list item
+        if (prevNode.type === schema.nodes.list_item) {
+            if (!dispatch) return true; // Just checking availability
+            
+            if (DEBUG) console.log('customJoinBackward: handling list item join');
+            
+            // Find the position where we should insert - at the end of the last paragraph in the list item
+            let targetPos = null;
+            let foundParagraph = false;
+            
+            // Walk through the list item to find the last paragraph
+            const listItemStart = $before.pos - prevNode.nodeSize + 1;
+            let currentPos = listItemStart;
+            
+            prevNode.forEach((child, offset) => {
+                if (child.type === schema.nodes.paragraph) {
+                    targetPos = currentPos + child.content.size;
+                    foundParagraph = true;
+                }
+                currentPos += child.nodeSize;
+            });
+            
+            if (!foundParagraph) {
+                if (DEBUG) console.log('customJoinBackward: no paragraph found in list item');
+                return false;
             }
-        });
-        
-        if (!lastParagraph) {
-            if (DEBUG) console.log('customJoinBackward: no paragraph found in container');
-            return false;
+            
+            const tr = state.tr;
+            const currentContent = $from.parent.content;
+            
+            if (DEBUG) console.log('customJoinBackward: merging content at pos', targetPos);
+            
+            // First delete the current paragraph to avoid position shifts
+            const deleteStart = $from.before();
+            const deleteEnd = $from.after();
+            tr.delete(deleteStart, deleteEnd);
+            
+            // Adjust target position if it comes after the deleted content
+            const adjustedTargetPos = targetPos > deleteStart ? targetPos - (deleteEnd - deleteStart) : targetPos;
+            
+            // Insert the content at the adjusted position
+            tr.insert(adjustedTargetPos, currentContent);
+            
+            // Set cursor position at the junction (where the original content ended)
+            tr.setSelection(state.selection.constructor.near(tr.doc.resolve(adjustedTargetPos)));
+            
+            dispatch(tr);
+            return true;
         }
         
-        if (!dispatch) return true; // Just checking availability
+        // Handle blockquotes - check if previous paragraph is inside a blockquote
+        if (prevNode.type === schema.nodes.paragraph && $before.parent.type === schema.nodes.blockquote) {
+            if (!dispatch) return true; // Just checking availability
+            
+            if (DEBUG) console.log('customJoinBackward: handling paragraph inside blockquote');
+            
+            // The previous node is the paragraph we want to merge with
+            // It's already the last paragraph in the blockquote (since it's right before our current position)
+            const targetPos = $before.pos;
+            
+            const tr = state.tr;
+            const currentContent = $from.parent.content;
+            
+            if (DEBUG) console.log('customJoinBackward: merging blockquote content at pos', targetPos);
+            
+            // First delete the current paragraph to avoid position shifts
+            const deleteStart = $from.before();
+            const deleteEnd = $from.after();
+            tr.delete(deleteStart, deleteEnd);
+            
+            // Adjust target position if it comes after the deleted content
+            const adjustedTargetPos = targetPos > deleteStart ? targetPos - (deleteEnd - deleteStart) : targetPos;
+            
+            // Insert the content at the adjusted position
+            tr.insert(adjustedTargetPos, currentContent);
+            
+            // Set cursor position at the junction (where the original content ended)
+            tr.setSelection(state.selection.constructor.near(tr.doc.resolve(adjustedTargetPos)));
+            
+            dispatch(tr);
+            return true;
+        }
         
-        if (DEBUG) console.log('customJoinBackward: merging into last paragraph at pos', lastParagraphPos);
+        // For direct paragraph-to-paragraph joins
+        if (prevNode.type === schema.nodes.paragraph) {
+            if (!dispatch) return true;
+            
+            // Check if the previous paragraph is inside any container that would prevent direct joining
+            let prevInContainer = false;
+            for (let depth = 0; depth <= $before.depth; depth++) {
+                const node = $before.node(depth);
+                if (node.type === schema.nodes.blockquote || node.type === schema.nodes.list_item) {
+                    prevInContainer = true;
+                    if (DEBUG) console.log('customJoinBackward: previous paragraph is inside', node.type.name);
+                    break;
+                }
+            }
+            
+            // If the previous paragraph is in a container, don't try direct join
+            if (prevInContainer) {
+                if (DEBUG) console.log('customJoinBackward: cannot join paragraph from inside container');
+                return false;
+            }
+            
+            const tr = state.tr;
+            try {
+                tr.join(joinPos);
+                dispatch(tr);
+                return true;
+            } catch (error) {
+                if (DEBUG) console.log('customJoinBackward: direct paragraph join failed:', error);
+                return false;
+            }
+        }
         
-        const tr = state.tr;
-        const currentNode = $from.parent;
-        
-        // Insert current paragraph's content at end of last paragraph
-        const insertPos = lastParagraphPos + lastParagraph.content.size;
-        tr.insert(insertPos, currentNode.content);
-        
-        // Delete the current paragraph node
-        const deleteStart = $from.before();
-        const deleteEnd = $from.after();
-        tr.delete(deleteStart, deleteEnd);
-        
-        dispatch(tr);
-        return true;
+        if (DEBUG) console.log('customJoinBackward: no suitable join target');
+        return false;
     };
 }
 

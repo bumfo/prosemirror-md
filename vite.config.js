@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-    // Base path for GitHub Pages deployment
-    base: '/prosemirror-md/',
+export default defineConfig(({ command }) => ({
+    // Use relative paths for build, specific path for dev
+    base: command === 'build' ? './' : '/prosemirror-md/',
     
     // Build configuration
     build: {
@@ -114,4 +114,4 @@ export default defineConfig({
         // Keep function names for better debugging
         keepNames: true
     }
-});
+}));
