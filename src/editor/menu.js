@@ -1,4 +1,4 @@
-import { setBlockType, wrapIn } from 'prosemirror-commands';
+import { setBlockType, wrapIn, chainCommands } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
@@ -335,12 +335,53 @@ function insertTableCommand(schema) {
 }
 
 /**
+ * Check if cursor is at the start of a block
+ * @param {import('prosemirror-state').EditorState} state - Editor state
+ * @returns {boolean} True if at block start
+ */
+function atBlockStart(state) {
+    const { $from, to } = state.selection;
+    return to <= $from.end() && $from.parentOffset === 0;
+}
+
+/**
+ * Custom backspace command that resets block to paragraph first
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
+ */
+function customBackspace(schema) {
+    return (state, dispatch) => {
+        // Only handle if at block start
+        if (!atBlockStart(state)) return false;
+
+        const { $from } = state.selection;
+        const parent = $from.parent;
+
+        // If already a paragraph, let default backspace handle it
+        if (parent.type === schema.nodes.paragraph) {
+            return false;
+        }
+
+        // Reset block to paragraph
+        if (dispatch) {
+            const tr = state.tr;
+            tr.setBlockType($from.before(), $from.after(), schema.nodes.paragraph);
+            dispatch(tr);
+        }
+        return true;
+    };
+}
+
+/**
  * Create keyboard shortcuts map
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
  * @returns {import('prosemirror-keymap').Keymap} Keymap plugin
  */
 export function createKeymap(schema) {
     const keys = {};
+
+    // Custom backspace behavior
+    keys['Backspace'] = customBackspace(schema);
 
     // Text formatting
     keys['Mod-b'] = customToggleMark(schema.marks.strong);
