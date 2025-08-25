@@ -57,7 +57,13 @@ export class ProseMirrorView {
                 menuPlugin(markdownSchema),
 
                 // Custom styling plugin for markdown-like appearance
-                this.createMarkdownStylingPlugin()
+                this.createMarkdownStylingPlugin(),
+                
+                // Fallback keymap for tab handling (do nothing)
+                keymap({
+                    'Tab': () => true,        // Prevent default tab behavior
+                    'Shift-Tab': () => true   // Prevent default shift-tab behavior
+                })
             ]
         });
 
