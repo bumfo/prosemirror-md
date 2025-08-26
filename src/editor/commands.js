@@ -39,7 +39,7 @@ function deleteBarrier(state, $cut, dispatch, dir) {
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
     if (!canDelAfter) return false;
-    let tr = doJoin(state.tr, $cut)
+    let tr = doJoin(state.tr, $cut);
 
     if (dispatch && tr !== null) {
         dispatch(tr.scrollIntoView());
@@ -78,7 +78,7 @@ function doJoin(tr, $cut) {
             depth += 1;
         }
 
-        let steps = tr.steps.length
+        let steps = tr.steps.length;
         let mapping = tr.mapping.slice(steps);
         let start = mapping.map(pos - depth);
         let end = mapping.map(pos + depth, -1);
@@ -115,7 +115,7 @@ function doJoin(tr, $cut) {
     let $joinAt = tr.doc.resolve(posAfter);
     if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
         canJoin(tr.doc, $joinAt.pos)) tr.join($joinAt.pos);
-    return tr
+    return tr;
 }
 
 /**
