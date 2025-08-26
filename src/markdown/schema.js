@@ -7,7 +7,7 @@ export const markdownSchema = new Schema({
         },
         paragraph: {
             content: 'inline*',
-            group: 'block',
+            group: 'block block_no_list',
             parseDOM: [{ tag: 'p' }],
             toDOM() {
                 return ['p', 0];
@@ -16,6 +16,14 @@ export const markdownSchema = new Schema({
         blockquote: {
             content: 'block+',
             group: 'block',
+            parseDOM: [{ tag: 'blockquote' }],
+            toDOM() {
+                return ['blockquote', 0];
+            }
+        },
+        blockquote_no_list: {
+            content: 'block_no_list+',
+            group: 'block block_no_list',
             parseDOM: [{ tag: 'blockquote' }],
             toDOM() {
                 return ['blockquote', 0];
@@ -45,7 +53,7 @@ export const markdownSchema = new Schema({
         },
         code_block: {
             content: 'text*',
-            group: 'block',
+            group: 'block block_no_list',
             code: true,
             defining: true,
             marks: '',
@@ -61,7 +69,7 @@ export const markdownSchema = new Schema({
         },
         ordered_list: {
             content: 'list_item+',
-            group: 'block',
+            group: 'block list',
             attrs: { order: { default: 1 }, tight: { default: false } },
             parseDOM: [{
                 tag: 'ol', getAttrs(dom) {
@@ -80,7 +88,7 @@ export const markdownSchema = new Schema({
         },
         bullet_list: {
             content: 'list_item+',
-            group: 'block',
+            group: 'block list',
             attrs: { tight: { default: false } },
             parseDOM: [{ tag: 'ul', getAttrs: dom => ({ tight: dom.hasAttribute('data-tight') }) }],
             toDOM(node) {
@@ -88,7 +96,7 @@ export const markdownSchema = new Schema({
             }
         },
         list_item: {
-            content: 'block+',
+            content: 'block_no_list (block_no_list | list)*',
             defining: true,
             parseDOM: [{ tag: 'li' }],
             toDOM() {
