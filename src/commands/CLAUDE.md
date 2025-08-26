@@ -4,9 +4,11 @@ This document covers the project-specific custom commands that enhance editing b
 
 ## Custom Command Algorithms
 
-The implementation includes three key custom behaviors:
+The implementation includes five key custom behaviors:
 - **customBackspace** - Block-to-paragraph conversion instead of deletion
 - **customJoinBackward** - Intelligent block joining with structural awareness  
+- **customSinkListItem** - Smart list indentation that preserves multi-paragraph structure
+- **customLiftListItem** - Smart list outdentation that preserves multi-paragraph structure
 - **Transform utilities** - Document manipulation helpers
 - **Debug support** - Optional debug logging for command tracing
 
@@ -34,6 +36,22 @@ The implementation includes three key custom behaviors:
 
 **Process**: Verify cursor at block start → find cut position using `findCutBefore()` → execute barrier removal with `deleteBarrier()`
 
+### customSinkListItem Algorithm
+
+**Key Innovation**: Preserves multi-paragraph list item structure by skipping indentation.
+
+**Implementation**: `customSinkListItem(schema)` in [commands.js](commands.js)
+
+**Logic**: Check if current list item contains multiple paragraphs → if yes and cursor is in second+ paragraph, return false (skip sinking) → otherwise use standard `sinkListItem` behavior
+
+### customLiftListItem Algorithm
+
+**Key Innovation**: Preserves multi-paragraph list item structure by skipping outdentation.
+
+**Implementation**: `customLiftListItem(schema)` in [commands.js](commands.js)
+
+**Logic**: Check if current list item contains multiple paragraphs → if yes and cursor is in second+ paragraph, return false (skip lifting) → otherwise use standard `liftListItem` behavior
+
 ## Transform Utilities
 
 **Implementation**: Helper functions in [transforms.js](transforms.js)
@@ -44,4 +62,7 @@ The implementation includes three key custom behaviors:
 
 ## Keymap Integration
 
-**Implementation**: Commands bound to keyboard shortcuts in [../editor/menu.js](../editor/menu.js) - `customBackspace` bound to 'Backspace' key.
+**Implementation**: Commands bound to keyboard shortcuts in [../editor/menu.js](../editor/menu.js):
+- `customBackspace` bound to 'Backspace' key
+- `customSinkListItem` bound to 'Tab' key
+- `customLiftListItem` bound to 'Shift-Tab' key

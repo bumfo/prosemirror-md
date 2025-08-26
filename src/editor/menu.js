@@ -2,7 +2,7 @@ import { setBlockType, wrapIn, autoJoin } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
-import { customBackspace } from '../commands';
+import { customBackspace, customSinkListItem, customLiftListItem } from '../commands';
 import {
     MenuItem,
     markItem,
@@ -375,8 +375,8 @@ export function createKeymap(schema) {
 
     // List operations
     keys['Enter'] = splitListItem(schema.nodes.list_item);
-    keys['Tab'] = sinkListItem(schema.nodes.list_item);
-    keys['Shift-Tab'] = liftListItem(schema.nodes.list_item);
+    keys['Tab'] = customSinkListItem(schema);
+    keys['Shift-Tab'] = customLiftListItem(schema);
 
     // Advanced commands
     keys['Shift-Enter'] = insertHardBreakCommand(schema);

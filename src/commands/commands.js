@@ -1,5 +1,5 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
-import { liftListItem } from 'prosemirror-schema-list';
+import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { atBlockStart, deleteBarrier, findCutBefore } from './transforms.js';
 
 /**
@@ -118,5 +118,75 @@ export function customBackspace(schema) {
             dispatch(tr);
         }
         return true;
+    };
+}
+
+/**
+ * Custom sink list item command that skips sinking for multi-paragraph list items
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('../menu/menu.d.ts').CommandFn} Custom sink list item command
+ */
+export function customSinkListItem(schema) {
+    return (state, dispatch, view) => {
+        const { $from } = state.selection;
+        
+        // Check if we're in a paragraph within a list item
+        if ($from.parent.type === schema.nodes.paragraph) {
+            const grandparent = $from.node($from.depth - 1);
+            if (grandparent && grandparent.type === schema.nodes.list_item) {
+                // Check if this list item contains multiple paragraphs
+                const listItemNode = grandparent;
+                if (listItemNode.childCount > 1) {
+                    // Check if cursor is at the first paragraph
+                    const paragraphIndex = $from.index($from.depth - 1);
+                    if (paragraphIndex > 0) {
+                        // We're in a second+ paragraph of multi-paragraph list item
+                        // Skip sinking to avoid breaking structure
+                        if (DEBUG) console.log('multi-paragraph list item (not first paragraph), skipping sink');
+                        return false;
+                    }
+                    // If we're in the first paragraph, continue with normal sinking behavior
+                }
+            }
+        }
+        
+        // Use standard sinkListItem behavior for single-paragraph list items
+        // or first paragraph of multi-paragraph list items
+        return sinkListItem(schema.nodes.list_item)(state, dispatch, view);
+    };
+}
+
+/**
+ * Custom lift list item command that skips lifting for multi-paragraph list items
+ * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
+ * @returns {import('../menu/menu.d.ts').CommandFn} Custom lift list item command
+ */
+export function customLiftListItem(schema) {
+    return (state, dispatch, view) => {
+        const { $from } = state.selection;
+        
+        // Check if we're in a paragraph within a list item
+        if ($from.parent.type === schema.nodes.paragraph) {
+            const grandparent = $from.node($from.depth - 1);
+            if (grandparent && grandparent.type === schema.nodes.list_item) {
+                // Check if this list item contains multiple paragraphs
+                const listItemNode = grandparent;
+                if (listItemNode.childCount > 1) {
+                    // Check if cursor is at the first paragraph
+                    const paragraphIndex = $from.index($from.depth - 1);
+                    if (paragraphIndex > 0) {
+                        // We're in a second+ paragraph of multi-paragraph list item
+                        // Skip lifting to avoid breaking structure
+                        if (DEBUG) console.log('multi-paragraph list item (not first paragraph), skipping lift');
+                        return false;
+                    }
+                    // If we're in the first paragraph, continue with normal lifting behavior
+                }
+            }
+        }
+        
+        // Use standard liftListItem behavior for single-paragraph list items
+        // or first paragraph of multi-paragraph list items
+        return liftListItem(schema.nodes.list_item)(state, dispatch, view);
     };
 }
