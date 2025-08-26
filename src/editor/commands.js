@@ -6,7 +6,7 @@ import { liftListItem } from 'prosemirror-schema-list';
 /**
  * Debug flag for command logging
  */
-const DEBUG = true;
+const DEBUG = false;
 
 // Helper functions from prosemirror-commands (exact copies)
 function atBlockStart(state, view) {
