@@ -100,25 +100,8 @@ export function customBackspace(schema) {
                 return true;
             }
 
-            if ($from.node(listRange.depth - 1).type === itemType) { // Inside a parent list
-                // if (paragraphIndex > 0) {
-                //     if (liftToOuterList(state, dispatch, itemType, listRange)) {
-                //         return true;
-                //     }
-                // }
-
-                if (liftOutOfList(state, dispatch, listRange)) {
-                    return true;
-                }
-
-                // if (liftToOuterList(state, dispatch, itemType, listRange)) {
-                //     return true;
-                // }
-
-            } else { // Outer list node
-                if (liftOutOfList(state, dispatch, listRange)) {
-                    return true;
-                }
+            if (liftOutOfList(state, dispatch, listRange)) {
+                return true;
             }
         }
 
@@ -316,7 +299,6 @@ export function customLiftListItem(schema) {
  * @returns {boolean}
  */
 function liftToOuterList(state, dispatch, itemType, range) {
-    console.log('liftToOuterList');
     let tr = state.tr, end = range.end, endOfList = range.$to.end(range.depth);
     if (end < endOfList) {
         // There are siblings after the lifted items, which must become
@@ -342,28 +324,12 @@ function liftToOuterList(state, dispatch, itemType, range) {
  * @returns {boolean}
  */
 function liftOutOfList(state, dispatch, range) {
-    console.log('liftOutOfList');
-    let tr = state.tr, list = range.parent;
-    // Merge the list items into a single big item
-    for (let pos = range.end, i = range.endIndex - 1, e = range.startIndex; i > e; i--) {
-        pos -= list.child(i).nodeSize;
-        tr.delete(pos - 1, pos + 1);
+    let tr = state.tr;
+    if (liftOutOfListTransform(tr, range)) {
+        if (dispatch) dispatch(tr.scrollIntoView());
+        return true;
     }
-    let $start = tr.doc.resolve(range.start), item = $start.nodeAfter;
-    if (tr.mapping.map(range.end) !== range.start + $start.nodeAfter.nodeSize)
-        return false;
-    let atStart = range.startIndex === 0, atEnd = range.endIndex === list.childCount;
-    let parent = $start.node(-1), indexBefore = $start.index(-1);
-    if (!parent.canReplace(indexBefore + (atStart ? 0 : 1), indexBefore + 1, item.content.append(atEnd ? Fragment.empty : Fragment.from(list))))
-        return false;
-    let start = $start.pos, end = start + item.nodeSize;
-    // Strip off the surrounding list. At the sides where we're not at
-    // the end of the list, the existing list is closed. At sides where
-    // this is the end, it is overwritten to its end.
-    tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
-        .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
-    if (dispatch) dispatch(tr.scrollIntoView());
-    return true;
+    return false;
 }
 
 /**
@@ -373,8 +339,6 @@ function liftOutOfList(state, dispatch, range) {
  */
 function liftOutOfListTransform(tr, range) {
     let steps = tr.steps.length;
-
-    console.log('liftOutOfListTransform');
     let list = range.parent;
     // Merge the list items into a single big item
     for (let pos = range.end, i = range.endIndex - 1, e = range.startIndex; i > e; i--) {
