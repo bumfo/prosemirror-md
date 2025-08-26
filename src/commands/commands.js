@@ -83,47 +83,29 @@ export function customBackspace(schema) {
         }
         // Else, already a paragraph, try various backspace behaviors            
 
-        // let { $from, $to } = state.selection;
-        let range = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
-        if (range) {
-            let grandparent = $from.node(range.depth - 1);
-
-            if (grandparent.type === itemType) { // Inside a parent list
-
-                // Check if this is a second (or later) paragraph in a list item
-                const paragraphIndex = $from.index($from.depth - 1);
-                if (paragraphIndex > 0) {
-                    if (DEBUG) console.log('second+ paragraph in list item, lift');
-                    if (lift(state, dispatch)) {
-                        return true;
+        let listRange = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
+        if (listRange) {
+            console.log('listRange', listRange.$from.toString(), listRange.$to.toString());
+            // Check if this is a second (or later) paragraph in a list item
+            const paragraphIndex = $from.index($from.depth - 1);
+            if (paragraphIndex > 0) {
+                if (DEBUG) console.log('second+ paragraph in list item, skip');
+                // if (lift(state, dispatch)) {
+                // }
+                return true;
             }
 
-                // Handle nested list items
-                const ancestor = $from.node($from.depth - 3);
-                if (ancestor && ancestor.type === itemType) {
-                    // Check if current list item is the first child of its parent list
-                    const listItemIndex = $from.index($from.depth - 2);
-
-                    if (listItemIndex === 0) {
-                        // First item in nested list - try joinBackward to merge with ancestor
-                        if (DEBUG) console.log('first item in nested list, joinBackward');
-                        if (joinBackward(state, dispatch)) {
-                            return true;
-                        }
-                    } else {
-                        // Not first item - try liftListItem instead
-                        if (DEBUG) console.log('not first item in nested list, lift');
-                        if (lift(state, dispatch)) {
-                            return true;
-                        }
-                    }
-                }
-
-                if (liftToOuterList(state, dispatch, itemType, range)) {
+            if ($from.node(listRange.depth - 1).type === itemType) { // Inside a parent list
+                if (liftOutOfList(state, dispatch, listRange)) {
                     return true;
                 }
+
+                // if (liftToOuterList(state, dispatch, itemType, listRange)) {
+                //     return true;
+                // }
+
             } else { // Outer list node
-                if (liftOutOfList(state, dispatch, range)) {
+                if (liftOutOfList(state, dispatch, listRange)) {
                     return true;
                 }
             }
