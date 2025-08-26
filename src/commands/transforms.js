@@ -75,7 +75,7 @@ function doJoin(tr, $cut) {
     return tr;
 }
 
-export function deleteBarrier(state, $cut, dispatch, dir) {
+export function customDeleteBarrier(state, $cut, dispatch, dir) {
     // if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;

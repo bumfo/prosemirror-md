@@ -1,6 +1,6 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
-import { atBlockStart, deleteBarrier, findCutBefore } from './transforms.js';
+import { atBlockStart, customDeleteBarrier, findCutBefore } from './transforms.js';
 import { findWrapping, ReplaceAroundStep, canSplit, liftTarget, canJoin } from 'prosemirror-transform';
 import { NodeRange, Fragment, Slice } from 'prosemirror-model';
 import { Transform } from 'prosemirror-transform';
@@ -16,8 +16,7 @@ import { Transform } from 'prosemirror-transform';
 /**
  * Debug flag for command logging
  */
-const DEBUG = true;
-
+const DEBUG = false;
 
 /**
  * Exact copy of joinBackward from prosemirror-commands
@@ -40,7 +39,7 @@ export function customJoinBackward(schema) {
         }
 
         // Apply the joining algorithm
-        return deleteBarrier(state, $cut, dispatch, -1);
+        return customDeleteBarrier(state, $cut, dispatch, -1);
     };
 }
 
@@ -87,15 +86,6 @@ export function customBackspace(schema) {
                         return true;
                     }
                 }
-
-                // if (lift(state, dispatch)) {
-                // }
-                // if (customJoinBackward(schema)(state, dispatch)) {
-                //     return true;
-                // }
-                // if (joinBackward(state, dispatch)) {
-                //     return true;
-                // }
 
                 return true;
             }
@@ -166,53 +156,10 @@ export function customBackspace(schema) {
             return true;
         }
 
-
         return true;
     }
 
     return command;
-}
-
-/**
- * @param {NodeType} nodeType
- */
-function wrapIn(nodeType) {
-    /**
-     * @param {EditorState} state
-     */
-    function func(state) {
-        let { $from: $start, from: start } = state.selection;
-
-        let tr = state.tr;
-        let range = $start.blockRange(),
-            wrapping = range && findWrapping(range, nodeType);
-
-        if (!wrapping) {
-            console.log('no wrapping');
-            return null;
-        }
-        tr.wrap(range, wrapping);
-        console.log('wrap', wrapping);
-
-        // APPROACH 2: Simplified Operation Reordering
-        // Calculate all positions before any joins (prevents invalidation)
-        let before = tr.doc.resolve(start - 1).nodeBefore;
-        let afterPos = tr.doc.resolve(start).end() + 1;
-        let after = tr.doc.resolve(afterPos).nodeAfter;
-
-        // Join AFTER first: This operation doesn't affect the 'start - 1' position
-        // needed for the subsequent 'join before' operation
-        if (after && after.type === nodeType && canJoin(tr.doc, afterPos))
-            tr.join(afterPos);
-
-        // Join BEFORE second: The 'start - 1' position is still valid after joining after
-        if (before && before.type === nodeType && canJoin(tr.doc, start - 1))
-            tr.join(start - 1);
-
-        return tr;
-    }
-
-    return func;
 }
 
 /**

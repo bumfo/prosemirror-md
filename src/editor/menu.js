@@ -33,8 +33,6 @@ import {
  * @typedef {import('../menu/menu.d.ts').StateContext} StateContext
  */
 
-const DEBUG = true;
-
 /**
  * Create menu item with keyboard shortcut (legacy helper for backward compatibility)
  * @param {IconSpec|string} icon - Icon specification or HTML string
