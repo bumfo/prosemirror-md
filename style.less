@@ -153,7 +153,25 @@ body {
     }
 }
 
-// Editor container styles handled by markdown.less
+// Markdown Textarea Styles (editor component)
+.markdown-textarea {
+    width: 100%;
+    min-height: 500px;
+    border: none;
+    padding: 2rem;
+    font-family: @mono-font;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    background: @white;
+    color: @text-color;
+    tab-size: 4;
+    
+    &::placeholder {
+        color: @text-light;
+    }
+}
 
 // ProseMirror WYSIWYG Styles
 .prosemirror-wysiwyg {
@@ -363,7 +381,11 @@ body {
         min-height: 300px;
     }
     
-    // Markdown-specific responsive styles handled by markdown.less
+    .markdown-textarea {
+        padding: 1rem;
+        font-size: 16px; // Prevent zoom on iOS
+        min-height: 300px;
+    }
     
     .mode-switcher {
         gap: 0.5rem;

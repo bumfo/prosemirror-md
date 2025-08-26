@@ -23,25 +23,7 @@
     border-radius: 3px;
 }
 
-// Markdown Textarea Styles
-.markdown-textarea {
-    width: 100%;
-    min-height: 500px;
-    border: none;
-    padding: 2rem;
-    font-family: @mono-font;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: vertical;
-    outline: none;
-    background: white;
-    color: #2c3e50;
-    tab-size: 4;
-    
-    &::placeholder {
-        color: @markdown-text-muted;
-    }
-}
+// Pure markdown content rendering styles only
 
 // ProseMirror Markdown-like Styling
 .ProseMirror {
@@ -191,8 +173,7 @@
 
 // Responsive adjustments for markdown content
 @media (max-width: 768px) {
-    .ProseMirror, 
-    .markdown-textarea {
+    .ProseMirror {
         padding: 1rem;
         font-size: 16px; // Prevent zoom on iOS
         min-height: 300px;
