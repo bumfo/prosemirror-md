@@ -2,7 +2,7 @@ import { setBlockType, wrapIn, autoJoin } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
 import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
-import { customBackspace } from './commands.js';
+import { customBackspace } from '../commands';
 import {
     MenuItem,
     markItem,
