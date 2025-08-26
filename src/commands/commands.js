@@ -39,6 +39,8 @@ export function customJoinBackward(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
  */
 export function customBackspace(schema) {
+    const itemType = schema.nodes.list_item;
+
     return (state, dispatch, view) => {
         if (!state.selection.empty) {
             return false;
@@ -67,36 +69,26 @@ export function customBackspace(schema) {
         }
         // Else, already a paragraph, try various backspace behaviors            
 
-        let itemType = schema.nodes.list_item;
         // let { $from, $to } = state.selection;
         let range = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
         if (range) {
             let grandparent = $from.node(range.depth - 1);
 
-            if (grandparent.type === itemType) {// Inside a parent list
+            if (grandparent.type === itemType) { // Inside a parent list
 
                 // Check if this is a second (or later) paragraph in a list item
-                // Pattern: <li><p>first</p><p>|second</p></li> where | is cursor
-                const listItemNode = grandparent;
                 const paragraphIndex = $from.index($from.depth - 1);
-
                 if (paragraphIndex > 0) {
-                    if (DEBUG) console.log('lift');
+                    if (DEBUG) console.log('second+ paragraph in list item, lift');
                     if (lift(state, dispatch)) {
                         return true;
                     }
-
-                    // if (DEBUG) console.log('second+ paragraph in list item, trying joinBackward');
-                    // if (joinBackward(state, dispatch)) {
-                    //     return true;
-                    // }
                 }
 
                 // Handle nested list items
                 const ancestor = $from.node($from.depth - 3);
-                if (ancestor && ancestor.type === schema.nodes.list_item) {
+                if (ancestor && ancestor.type === itemType) {
                     // Check if current list item is the first child of its parent list
-                    const parentList = $from.node($from.depth - 2);
                     const listItemIndex = $from.index($from.depth - 2);
 
                     if (listItemIndex === 0) {
@@ -155,7 +147,8 @@ export function customBackspace(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom sink list item command
  */
 export function customSinkListItem(schema) {
-    let sinkListCommand = sinkListItem(schema.nodes.list_item);
+    const itemType = schema.nodes.list_item;
+    let sinkListCommand = sinkListItem(itemType);
 
     return (state, dispatch, view) => {
         const { $from } = state.selection;
@@ -163,7 +156,7 @@ export function customSinkListItem(schema) {
         // Check if we're in a paragraph within a list item
         if ($from.parent.type === schema.nodes.paragraph) {
             const grandparent = $from.node($from.depth - 1);
-            if (grandparent && grandparent.type === schema.nodes.list_item) {
+            if (grandparent && grandparent.type === itemType) {
                 // Check if this list item contains multiple paragraphs
                 const listItemNode = grandparent;
                 if (listItemNode.childCount > 1) {
@@ -192,7 +185,8 @@ export function customSinkListItem(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom lift list item command
  */
 export function customLiftListItem(schema) {
-    let liftListCommand = liftListItem(schema.nodes.list_item);
+    const itemType = schema.nodes.list_item;
+    let liftListCommand = liftListItem(itemType);
 
     return (state, dispatch, view) => {
         const { $from } = state.selection;
@@ -200,7 +194,7 @@ export function customLiftListItem(schema) {
         // Check if we're in a paragraph within a list item
         if ($from.parent.type === schema.nodes.paragraph) {
             const grandparent = $from.node($from.depth - 1);
-            if (grandparent && grandparent.type === schema.nodes.list_item) {
+            if (grandparent && grandparent.type === itemType) {
                 // Check if this list item contains multiple paragraphs
                 const listItemNode = grandparent;
                 if (listItemNode.childCount > 1) {
