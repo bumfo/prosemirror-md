@@ -38,6 +38,9 @@ Thumbs.db
 logs
 *.log
 
+# Temporary development files
+*.txt
+
 # Runtime data
 pids
 *.pid
