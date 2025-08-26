@@ -7,6 +7,7 @@ import { NodeRange, Fragment, Slice } from 'prosemirror-model';
 /**
  * @typedef {import('prosemirror-state').EditorState} EditorState
  * @typedef {import('prosemirror-model').Schema} Schema
+ * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
  */
 
@@ -48,6 +49,7 @@ export function customJoinBackward(schema) {
  */
 export function customBackspace(schema) {
     const itemType = schema.nodes.list_item;
+    const wrapInList = wrapIn(itemType);
 
     /**
      * @param {EditorState} state
@@ -68,7 +70,7 @@ export function customBackspace(schema) {
             return false;
         }
 
-        let { $from, $to } = state.selection;
+        let { $from, $to, from } = state.selection;
         const parent = $from.parent;
 
         if (parent.type !== schema.nodes.paragraph) {
@@ -83,15 +85,49 @@ export function customBackspace(schema) {
         }
         // Else, already a paragraph, try various backspace behaviors            
 
-        let listRange = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
+        let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
+        let listRange = $from.blockRange($to, listPredicate);
         if (listRange) {
             console.log('listRange', listRange.$from.toString(), listRange.$to.toString());
             // Check if this is a second (or later) paragraph in a list item
             const paragraphIndex = $from.index($from.depth - 1);
             if (paragraphIndex > 0) {
                 if (DEBUG) console.log('second+ paragraph in list item, skip');
+
+                let steps = state.tr.steps.length;
+                const tr = wrapInList(state);
+                if (tr) {
+                    console.log('wrapInList', steps, tr.steps.length);
+
+                    let mapping = tr.mapping.slice(steps);
+                    let $pos = tr.doc.resolve(mapping.map(from - 1));
+                    let range = $pos.blockRange($pos, listPredicate);
+                    console.log(range.$from.toString(), range.$from.parent.toString());
+                    // dispatch(tr);
+                    
+                    if (liftToOuterList(state, dispatch, itemType, listRange)) {
+                        return true;
+                    }
+
+                    if (liftOutOfList(state, dispatch, range)) {
+                        return true;
+                    } else {
+                        console.log('liftOutOfList fails');
+
+                        dispatch(tr);
+                        return true;
+                    }
+                }
+
                 // if (lift(state, dispatch)) {
                 // }
+                // if (customJoinBackward(schema)(state, dispatch)) {
+                //     return true;
+                // }
+                // if (joinBackward(state, dispatch)) {
+                //     return true;
+                // }
+
                 return true;
             }
 
@@ -136,6 +172,48 @@ export function customBackspace(schema) {
     }
 
     return command;
+}
+
+/**
+ * @param {NodeType} nodeType
+ */
+function wrapIn(nodeType) {
+    /**
+     * @param {EditorState} state
+     */
+    function func(state) {
+        let { $from: $start, from: start } = state.selection;
+
+        let tr = state.tr;
+        let range = $start.blockRange(),
+            wrapping = range && findWrapping(range, nodeType);
+
+        if (!wrapping) {
+            console.log('no wrapping');
+            return null;
+        }
+        tr.wrap(range, wrapping);
+        console.log('wrap', wrapping);
+
+        // APPROACH 2: Simplified Operation Reordering
+        // Calculate all positions before any joins (prevents invalidation)
+        let before = tr.doc.resolve(start - 1).nodeBefore;
+        let afterPos = tr.doc.resolve(start).end() + 1;
+        let after = tr.doc.resolve(afterPos).nodeAfter;
+
+        // Join AFTER first: This operation doesn't affect the 'start - 1' position
+        // needed for the subsequent 'join before' operation
+        if (after && after.type === nodeType && canJoin(tr.doc, afterPos))
+            tr.join(afterPos);
+
+        // Join BEFORE second: The 'start - 1' position is still valid after joining after
+        if (before && before.type === nodeType && canJoin(tr.doc, start - 1))
+            tr.join(start - 1);
+
+        return tr;
+    }
+
+    return func;
 }
 
 /**
