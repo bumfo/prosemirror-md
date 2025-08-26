@@ -4,6 +4,12 @@
 
 This is a modern WYSIWYG markdown editor built with ProseMirror that provides seamless bidirectional conversion between rich text editing and raw markdown. The project demonstrates ProseMirror's powerful document model and state management system for building sophisticated text editors.
 
+**Repository Structure**: This project is part of a larger repository (`editor-md`) that contains the main editor implementation plus reference copies of original ProseMirror packages:
+- `prosemirror-md/` - **Main editor implementation** (this package)
+- `prosemirror-menu/`, `prosemirror-commands/`, `prosemirror-example-setup/` - Reference implementations of original ProseMirror packages (for study/reference only)
+
+**Dependencies**: The editor depends on official ProseMirror npm packages and implements its own custom menu system and commands within the `src/` directory. The sibling directories are just reference copies of the original ProseMirror source code for learning and comparison purposes.
+
 ## Architecture Overview
 
 ### Core Components
@@ -12,10 +18,22 @@ This is a modern WYSIWYG markdown editor built with ProseMirror that provides se
 - **`src/editor/`** - Editor view implementations
   - **`wysiwyg-view.js`** - ProseMirror-based WYSIWYG editor
   - **`markdown-view.js`** - Simple textarea-based markdown editor
+  - **`menu.js`** - Menu configuration and integration for the WYSIWYG editor
+  - **`inputrules.js`** - Smart input rules for markdown shortcuts
 - **`src/markdown/`** - Markdown parsing and serialization
   - **`schema.js`** - ProseMirror schema for markdown documents
   - **`parser.js`** - Markdown to ProseMirror document parser
   - **`serializer.js`** - ProseMirror to markdown serializer
+- **`src/menu/`** - Reusable menu system components
+  - **`menu.js`** - Core MenuItem class and menu utilities
+  - **`menu.d.ts`** - TypeScript definitions for menu components
+  - **`menubar.js`** - MenuBar component for toolbar rendering
+  - **`icons.js`** - SVG icons for menu items
+  - **`index.js`** - Public API exports
+- **`src/commands/`** - Custom ProseMirror commands
+  - **`commands.js`** - Custom backspace and join commands
+  - **`transforms.js`** - Document transformation utilities
+  - **`index.js`** - Command exports
 
 ### Key Features
 
@@ -25,6 +43,8 @@ This is a modern WYSIWYG markdown editor built with ProseMirror that provides se
 - **Markdown Fidelity** - Preserves markdown structure during conversion
 - **Extensible Design** - Plugin-based architecture for custom functionality
 - **Performance Optimized** - ESM modules with import maps and modulepreload
+- **Custom Menu System** - Reusable menu components with optimized state management
+- **Enhanced Commands** - Custom backspace behavior and improved text editing
 
 ## ProseMirror Concepts
 
@@ -96,13 +116,13 @@ export const markdownSchema = new Schema({
 ## Development Commands
 
 ```bash
-# Navigate to prosemirror-md directory
+# Navigate to prosemirror-md directory (within the editor-md repo)
 cd prosemirror-md
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (opens at http://localhost:5173)
 npm run dev
 
 # Build for production
@@ -111,8 +131,14 @@ npm run build
 # Preview production build
 npm run preview
 
-# Build for GitHub Pages
+# Build for GitHub Pages deployment
 npm run build:gh-pages
+
+# Deploy to GitHub Pages (combines build:gh-pages)
+npm run deploy
+
+# Run linting (ESLint configuration)
+npx eslint src/
 ```
 
 ## Package Dependencies
@@ -464,6 +490,179 @@ const menu = menuBar({
 });
 ```
 
+## Menu System Architecture
+
+### Overview
+
+The project includes a **custom-built** sophisticated menu system (`src/menu/`) that provides reusable components for building ProseMirror toolbars and menus. This is a completely independent implementation (not dependent on the official `prosemirror-menu` package) that offers optimized performance through intelligent state caching and a flexible API for creating custom menu items.
+
+### Core Components
+
+#### MenuItem Class
+
+The `MenuItem` class is the foundation of the menu system:
+
+```js
+import { MenuItem } from './src/menu/index.js';
+
+const boldItem = new MenuItem({
+    title: "Toggle Bold",
+    icon: { text: "B", css: "font-weight: bold" },
+    run: customToggleMark(schema.marks.strong),
+    active: (state, context) => markActive(schema.marks.strong)(state, context),
+    enable: (state) => customToggleMark(schema.marks.strong)(state)
+});
+```
+
+**Key Features:**
+- **Optimized Rendering**: Caches previous states to avoid unnecessary DOM updates
+- **Flexible Icons**: Supports HTML, text, and CSS-based icons
+- **State Management**: Active, enabled, and visibility states with context optimization
+- **Event Handling**: Proper focus management and command execution
+
+#### StateContext Optimization
+
+The menu system uses a `StateContext` object to optimize expensive state calculations:
+
+```js
+// Context is computed once per transaction
+const context = {
+    markActive: (markType) => /* cached result */,
+    blockActive: (nodeType) => /* cached result */,
+    // ... other cached state functions
+};
+
+// Passed to all menu items for efficient state checking
+menuItem.update(state, context);
+```
+
+#### MenuBar Component
+
+Creates a complete toolbar with grouped menu items:
+
+```js
+import { MenuBar } from './src/menu/index.js';
+
+const toolbar = new MenuBar([
+    // Bold, Italic, Code group
+    [boldItem, italicItem, codeItem],
+    // Heading group
+    [h1Item, h2Item, h3Item],
+    // List group
+    [bulletListItem, orderedListItem]
+]);
+```
+
+### Icon System
+
+The menu system includes a comprehensive icon set with SVG-based icons:
+
+```js
+import { icons } from './src/menu/index.js';
+
+// Available icons
+icons.strong    // Bold (B)
+icons.em        // Italic (I)  
+icons.code      // Code (</>) 
+icons.link      // Link (🔗)
+icons.bulletList    // Bullet list
+icons.orderedList   // Numbered list
+icons.blockquote    // Quote block
+icons.undo      // Undo arrow
+icons.redo      // Redo arrow
+```
+
+## Custom Commands Implementation
+
+### Overview
+
+The project implements several **custom commands** that enhance the editing experience beyond standard ProseMirror behavior. These are entirely custom implementations located in `src/commands/` (not dependent on any external packages) and provide more intuitive text editing workflows.
+
+### Custom Backspace Command
+
+The `customBackspace` function provides enhanced backspace behavior:
+
+```js
+import { customBackspace } from './src/commands/index.js';
+
+// Usage in keymap
+keymap({
+    'Backspace': customBackspace(schema)
+})
+```
+
+**Behavior:**
+1. **Block Reset**: When at the start of a non-paragraph block (heading, blockquote, etc.), converts it to a paragraph instead of deleting
+2. **List Handling**: In list items, attempts to lift the item out of the list structure
+3. **Smart Joining**: Uses custom join logic that better handles complex document structures
+4. **Fallback Chain**: Falls back through multiple strategies (lift, join, select) for robust editing
+
+**Example Workflow:**
+- Cursor at start of `# Heading` → Press Backspace → Becomes `Heading` (paragraph)
+- Cursor at start of list item → Press Backspace → Lifts item out of list
+- Cursor at start of paragraph → Press Backspace → Joins with previous block
+
+### Custom Join Backward
+
+The `customJoinBackward` function improves block joining:
+
+```js
+function customJoinBackward(schema) {
+    return (state, dispatch, view) => {
+        let $cursor = atBlockStart(state, view);
+        if (!$cursor) return false;
+
+        let $cut = findCutBefore($cursor);
+        if (!$cut) return false;
+
+        return deleteBarrier(state, $cut, dispatch, -1);
+    };
+}
+```
+
+**Features:**
+- **Smart Cut Detection**: Finds the optimal position to join blocks
+- **Barrier Deletion**: Removes structural barriers between blocks intelligently  
+- **Fallback Support**: Integrates with standard ProseMirror commands when needed
+
+### Transform Utilities
+
+The `src/commands/transforms.js` file provides low-level document transformation utilities:
+
+- **`atBlockStart`**: Detects if cursor is at the beginning of a block
+- **`findCutBefore`**: Finds the position where blocks can be joined
+- **`deleteBarrier`**: Removes structural barriers between document nodes
+
+These utilities support the custom commands and can be used to build additional editing behaviors.
+
+### TypeScript Integration
+
+The menu system includes comprehensive TypeScript definitions in `src/menu/menu.d.ts`:
+
+```typescript
+export interface MenuItemSpec {
+    run: CommandFn;
+    select?: (state: EditorState, context?: StateContext) => boolean;
+    enable?: (state: EditorState, context?: StateContext) => boolean;
+    active?: (state: EditorState, context?: StateContext) => boolean;
+    render?: (view: EditorView) => {dom: HTMLElement, update: (state: EditorState) => boolean};
+    icon?: IconSpec;
+    label?: string;
+    title?: string | ((state: EditorState) => string);
+    class?: string;
+    css?: string;
+}
+
+export interface StateContext {
+    markActive: (markType: MarkType) => boolean;
+    blockActive: (nodeType: NodeType, attrs?: {[key: string]: any}) => boolean;
+    canInsert: (nodeType: NodeType) => boolean;
+    wrapCommand: (nodeType: NodeType) => CommandFn;
+}
+```
+
+These types provide excellent IDE support and help catch errors during development.
+
 ## Custom Mark Toggle Logic
 
 ### Overview
@@ -485,19 +684,19 @@ This implementation uses a custom `customToggleMark` function instead of ProseMi
 ### Implementation Details
 
 ```javascript
-function customToggleMark(markType) {
+export function customToggleMark(markType) {
     return (state, dispatch, view) => {
         const { from, to, empty } = state.selection;
-        
+
         if (empty) {
             // For collapsed cursor, use standard toggleMark behavior
             return toggleMark(markType)(state, dispatch, view);
         }
-        
+
         // For selections, check if ENTIRE selection has the mark
         let allTextHasMark = true;
         let hasAnyText = false;
-        
+
         state.doc.nodesBetween(from, to, (node, pos) => {
             if (node.isText && node.text.length > 0) {
                 hasAnyText = true;
@@ -507,12 +706,13 @@ function customToggleMark(markType) {
                 }
             }
         });
-        
+
         if (!hasAnyText) return false;
+
         if (!dispatch) return true; // Just checking if command is available
-        
+
         let tr = state.tr;
-        
+
         if (allTextHasMark) {
             // All text has the mark -> remove it
             tr = tr.removeMark(from, to, markType);
@@ -520,7 +720,7 @@ function customToggleMark(markType) {
             // Not all text has the mark -> apply it to entire selection
             tr = tr.addMark(from, to, markType.create());
         }
-        
+
         dispatch(tr);
         return true;
     };
