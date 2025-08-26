@@ -10,12 +10,13 @@ import {canJoin, findWrapping} from 'prosemirror-transform';
 /**
  * Build an input rule for automatically wrapping a textblock when a given string is typed
  * Enhanced version that joins with both preceding and following nodes of the same type
- * 
+ *
  * Development history:
  * 1. Started with original ProseMirror implementation (joins only before)
  * 2. Enhanced to also join with following nodes (bidirectional joining)
- * 3. Fixed the enhancement to properly handle position mapping after joins
- * 
+ * 3. First fix: Complex transaction mapping approach
+ * 4. Second solution: Simplified by joining after first, then before (avoids mapping complexity)
+ *
  * @param {RegExp} regexp - Regular expression pattern, usually starting with `^` for textblock start
  * @param {import('prosemirror-model').NodeType} nodeType - Node type to wrap content in
  * @param {object|function} [getAttrs] - Static attributes or function to compute them from match
@@ -32,32 +33,21 @@ function wrappingInputRule(regexp, nodeType, getAttrs = null, joinPredicate) {
             return null;
         tr.wrap(range, wrapping);
 
-        // CRITICAL: Record step count before joins to track position changes
-        let steps = tr.steps.length;
-
-        // Try to join with node before
+        // Calculate positions before any joins
         let before = tr.doc.resolve(start - 1).nodeBefore;
-        
-        // CRITICAL: Calculate afterPos BEFORE any joins to avoid position invalidation
-        // Our first enhancement calculated this after the first join, causing incorrect positions
         let afterPos = tr.doc.resolve(start).end() + 1;
+        let after = tr.doc.resolve(afterPos).nodeAfter;
 
+        // Join with following node FIRST - this avoids position mapping complexity
+        // When we join after, the 'start - 1' position for joining before remains valid
+        if (after && after.type === nodeType && canJoin(tr.doc, afterPos) &&
+            (!joinPredicate || joinPredicate(match, after)))
+            tr.join(afterPos);
+
+        // Join with preceding node SECOND - start - 1 position is still valid
         if (before && before.type === nodeType && canJoin(tr.doc, start - 1) &&
             (!joinPredicate || joinPredicate(match, before)))
             tr.join(start - 1);
-
-        // CRITICAL: Use transaction mapping to correctly track position changes
-        // When nodes are joined, all subsequent positions shift - mapping handles this
-        let mapping = tr.mapping.slice(steps);
-        afterPos = mapping.map(afterPos);
-
-        // Try to join with node after using the correctly mapped position
-        if (afterPos < tr.doc.content.size) {
-            let after = tr.doc.resolve(afterPos).nodeAfter;
-            if (after && after.type === nodeType && canJoin(tr.doc, afterPos) &&
-                (!joinPredicate || joinPredicate(match, after)))
-                tr.join(afterPos);
-        }
 
         return tr;
     });
