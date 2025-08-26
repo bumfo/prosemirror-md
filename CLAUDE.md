@@ -122,7 +122,7 @@ cd prosemirror-md
 # Install dependencies
 npm install
 
-# Start development server (opens at http://localhost:5173)
+# Start development server (the user should run themselves)
 npm run dev
 
 # Build for production
