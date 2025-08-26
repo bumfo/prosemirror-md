@@ -12,7 +12,7 @@ import {
     markActive,
     menuBar,
     icons
-} from '../menu/index.js';
+} from '../menu';
 
 /**
  * Editor-specific menu configuration and commands
