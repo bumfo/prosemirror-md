@@ -54,36 +54,10 @@ export function customBackspace(schema) {
     /**
      * @param {EditorState} state
      * @param {(tr: any) => void} dispatch
-     * @param {any} view
      * @returns {boolean}
      */
-    function command(state, dispatch, view) {
-        if (!state.selection.empty) {
-            return false;
-        }
-
-        const atStart = atBlockStart(state, view);
-
-        // Only handle if at block start
-        if (!atStart) {
-            // if (DEBUG) console.log('skip not atStart');
-            return false;
-        }
-
+    function backspaceList(state, dispatch) {
         let { $from, $to, from } = state.selection;
-        const parent = $from.parent;
-
-        if (parent.type !== schema.nodes.paragraph) {
-            // Reset block to paragraph
-            if (dispatch) {
-                const tr = state.tr;
-                tr.setBlockType($from.before(), $from.after(), schema.nodes.paragraph);
-                dispatch(tr);
-            }
-
-            return true;
-        }
-        // Else, already a paragraph, try various backspace behaviors            
 
         let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
         let listRange = $from.blockRange($to, listPredicate);
@@ -93,31 +67,6 @@ export function customBackspace(schema) {
             const paragraphIndex = $from.index($from.depth - 1);
             if (paragraphIndex > 0) {
                 if (DEBUG) console.log('second+ paragraph in list item, skip');
-
-                let steps = state.tr.steps.length;
-                const tr = wrapInList(state);
-                if (tr) {
-                    console.log('wrapInList', steps, tr.steps.length);
-
-                    let mapping = tr.mapping.slice(steps);
-                    let $pos = tr.doc.resolve(mapping.map(from - 1));
-                    let range = $pos.blockRange($pos, listPredicate);
-                    console.log(range.$from.toString(), range.$from.parent.toString());
-                    // dispatch(tr);
-                    
-                    if (liftToOuterList(state, dispatch, itemType, listRange)) {
-                        return true;
-                    }
-
-                    if (liftOutOfList(state, dispatch, range)) {
-                        return true;
-                    } else {
-                        console.log('liftOutOfList fails');
-
-                        dispatch(tr);
-                        return true;
-                    }
-                }
 
                 // if (lift(state, dispatch)) {
                 // }
@@ -145,6 +94,48 @@ export function customBackspace(schema) {
                     return true;
                 }
             }
+        }
+        
+        return false;
+    }
+
+
+    /**
+     * @param {EditorState} state
+     * @param {(tr: any) => void} dispatch
+     * @param {any} view
+     * @returns {boolean}
+     */
+    function command(state, dispatch, view) {
+        if (!state.selection.empty) {
+            return false;
+        }
+
+        const atStart = atBlockStart(state, view);
+
+        // Only handle if at block start
+        if (!atStart) {
+            // if (DEBUG) console.log('skip not atStart');
+            return false;
+        }
+
+        let { $from } = state.selection;
+        const parent = $from.parent;
+
+        if (parent.type !== schema.nodes.paragraph) {
+            // Reset block to paragraph
+            if (dispatch) {
+                const tr = state.tr;
+                tr.setBlockType($from.before(), $from.after(), schema.nodes.paragraph);
+                dispatch(tr);
+            }
+
+            return true;
+        }
+        // Else, already a paragraph, try various backspace behaviors            
+        
+        if (backspaceList(state, dispatch)) {
+            return true;
         }
 
         if (DEBUG) console.log('lift');
