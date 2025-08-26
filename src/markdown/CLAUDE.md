@@ -1,6 +1,6 @@
 # Markdown Implementation Details
 
-This document covers the project-specific markdown conversion implementation. For general ProseMirror concepts, see the [ProseMirror Library Guide](../../CLAUDE.md).
+This document covers the project-specific markdown conversion implementation. For general ProseMirror concepts, see the [ProseMirror Library Guide](../../../CLAUDE.md).
 
 ## Custom Implementation
 

@@ -1,6 +1,6 @@
 # Commands Implementation Details
 
-This document covers the project-specific custom commands that enhance editing beyond standard ProseMirror behavior. For general ProseMirror command concepts, see the [ProseMirror Library Guide](../../CLAUDE.md).
+This document covers the project-specific custom commands that enhance editing beyond standard ProseMirror behavior. For general ProseMirror command concepts, see the [ProseMirror Library Guide](../../../CLAUDE.md).
 
 ## Custom Command Algorithms
 

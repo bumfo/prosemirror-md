@@ -1,6 +1,6 @@
 # Menu System Implementation Details
 
-This document covers the project-specific implementation details of the custom menu system. For general ProseMirror concepts, see the [ProseMirror Library Guide](../../CLAUDE.md).
+This document covers the project-specific implementation details of the custom menu system. For general ProseMirror concepts, see the [ProseMirror Library Guide](../../../CLAUDE.md).
 
 ## Custom Implementation Overview
 
