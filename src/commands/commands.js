@@ -3,6 +3,7 @@ import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { atBlockStart, deleteBarrier, findCutBefore } from './transforms.js';
 import { findWrapping, ReplaceAroundStep, canSplit, liftTarget, canJoin } from 'prosemirror-transform';
 import { NodeRange, Fragment, Slice } from 'prosemirror-model';
+import { Transform } from 'prosemirror-transform';
 
 /**
  * @typedef {import('prosemirror-state').EditorState} EditorState
@@ -50,7 +51,6 @@ export function customJoinBackward(schema) {
  */
 export function customBackspace(schema) {
     const itemType = schema.nodes.list_item;
-    const wrapInList = wrapIn(itemType);
 
     /**
      * @param {EditorState} state
@@ -60,20 +60,18 @@ export function customBackspace(schema) {
     function backspaceList(state, dispatch) {
         let { $from, $to, from } = state.selection;
 
-        console.log('backspaceList', $from, $to, $from.parent.toString(), $to.parent.toString());
-
         let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
         let listRange = $from.blockRange($to, listPredicate);
         if (listRange) {
-            console.log('listRange', listRange.$from.toString(), listRange.$to.toString());
+            if (DEBUG) console.log('backspaceList');
+
             // Check if this is a second (or later) paragraph in a list item
             const paragraphIndex = $from.index($from.depth - 1);
             if (paragraphIndex > 0) {
-                if (DEBUG) console.log('second+ paragraph in list item, skip');
+                if (DEBUG) console.log('second+ paragraph in list item');
 
                 let pos = $from.before($from.depth);
                 let $pos = state.doc.resolve(pos);
-                console.log(pos, $pos);
 
                 let tr = state.tr;
 
@@ -82,8 +80,12 @@ export function customBackspace(schema) {
 
                 if (canSplit(tr.doc, pos, 1, types)) {
                     tr.split(pos, 1, types);
-                    dispatch(tr);
-                    return true;
+
+                    $pos = tr.doc.resolve(tr.mapping.map(pos));
+                    if (liftOutOfListTransform(tr, $pos.blockRange($pos, listPredicate))) {
+                        dispatch(tr);
+                        return true;
+                    }
                 }
 
                 // if (lift(state, dispatch)) {
@@ -99,11 +101,11 @@ export function customBackspace(schema) {
             }
 
             if ($from.node(listRange.depth - 1).type === itemType) { // Inside a parent list
-                if (paragraphIndex > 0) {
-                    if (liftToOuterList(state, dispatch, itemType, listRange)) {
-                        return true;
-                    }
-                }
+                // if (paragraphIndex > 0) {
+                //     if (liftToOuterList(state, dispatch, itemType, listRange)) {
+                //         return true;
+                //     }
+                // }
 
                 if (liftOutOfList(state, dispatch, listRange)) {
                     return true;
@@ -122,7 +124,6 @@ export function customBackspace(schema) {
 
         return false;
     }
-
 
     /**
      * @param {EditorState} state
@@ -362,5 +363,36 @@ function liftOutOfList(state, dispatch, range) {
     tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
         .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
     if (dispatch) dispatch(tr.scrollIntoView());
+    return true;
+}
+
+/**
+ * @param {Transform} tr
+ * @param {NodeRange} range
+ * @returns {boolean}
+ */
+function liftOutOfListTransform(tr, range) {
+    let steps = tr.steps.length;
+
+    console.log('liftOutOfListTransform');
+    let list = range.parent;
+    // Merge the list items into a single big item
+    for (let pos = range.end, i = range.endIndex - 1, e = range.startIndex; i > e; i--) {
+        pos -= list.child(i).nodeSize;
+        tr.delete(pos - 1, pos + 1);
+    }
+    let $start = tr.doc.resolve(range.start), item = $start.nodeAfter;
+    if (tr.mapping.slice(steps).map(range.end) !== range.start + $start.nodeAfter.nodeSize)
+        return false;
+    let atStart = range.startIndex === 0, atEnd = range.endIndex === list.childCount;
+    let parent = $start.node(-1), indexBefore = $start.index(-1);
+    if (!parent.canReplace(indexBefore + (atStart ? 0 : 1), indexBefore + 1, item.content.append(atEnd ? Fragment.empty : Fragment.from(list))))
+        return false;
+    let start = $start.pos, end = start + item.nodeSize;
+    // Strip off the surrounding list. At the sides where we're not at
+    // the end of the list, the existing list is closed. At sides where
+    // this is the end, it is overwritten to its end.
+    tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
+        .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
     return true;
 }
