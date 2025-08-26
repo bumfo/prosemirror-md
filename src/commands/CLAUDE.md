@@ -20,7 +20,10 @@ The implementation includes three key custom behaviors:
 
 **Fallback Chain**:
 1. Block reset (heading/blockquote → paragraph)
-2. List handling (`liftListItem` for list items)
+2. List handling:
+   - **Multi-paragraph detection**: If cursor is at start of second+ paragraph in list item, use `joinBackward` to merge paragraphs
+   - **Nested list handling**: For nested list items, attempt `joinBackward` first
+   - **Standard list lifting**: Use `liftListItem` for single-paragraph list items
 3. Standard ProseMirror fallbacks (lift → customJoinBackward → joinBackward → selectNodeBackward)
 
 ### customJoinBackward Algorithm  

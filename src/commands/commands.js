@@ -57,9 +57,24 @@ export function customBackspace(schema) {
         if (parent.type === schema.nodes.paragraph) {
             // if (DEBUG) console.log('already paragraph');
 
-            // Check if we're in a list item and try to lift it first
+            // Check if we're in a list item and handle different scenarios
             const grandparent = $from.node($from.depth - 1);
             if (grandparent && grandparent.type === schema.nodes.list_item) {
+                // Check if this is a second (or later) paragraph in a list item
+                // Pattern: <li><p>first</p><p>|second</p></li> where | is cursor
+                const listItemNode = grandparent;
+                const paragraphIndex = $from.index($from.depth - 1);
+                
+                if (paragraphIndex > 0) {
+                    // This is not the first paragraph in the list item
+                    // Try joinBackward to merge with the previous paragraph
+                    if (DEBUG) console.log('second+ paragraph in list item, trying joinBackward');
+                    if (joinBackward(state, dispatch)) {
+                        return true;
+                    }
+                }
+
+                // Handle nested list items
                 const ancestor = $from.node($from.depth - 3);
                 if (ancestor && ancestor.type === schema.nodes.list_item) {
                     if (joinBackward(state, dispatch)) {
