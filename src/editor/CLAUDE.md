@@ -38,10 +38,12 @@ The key innovation of this implementation is seamless switching between WYSIWYG 
 **Implementation**: `MarkdownView` class in [markdown-view.js](markdown-view.js)
 
 **Enhanced Features**:
-- Auto-resize textarea
-- Tab insertion for code blocks
-- Keyboard shortcuts (Cmd/Ctrl+B, I) for markdown insertion
-- Smart focus management
+- Auto-resize textarea with minimum height (300px)
+- Tab insertion (4 spaces) with proper cursor positioning
+- IME composition tracking for international input
+- Cursor position management with preservation options
+- Smart focus management with optional focus control
+- Grammar checking disabled for better performance
 
 ## Component Integration
 
@@ -52,7 +54,12 @@ The key innovation of this implementation is seamless switching between WYSIWYG 
 **Implementation**: `createInputRules()` in [inputrules.js](inputrules.js) - smart typing patterns (# → heading, * → list, > → blockquote, --- → horizontal rule).
 
 ### Plugin Coordination
-**Plugin Order**: Core plugins → Input rules → UI (menu, styling) → Fallback keymaps
+**Plugin Order (from wysiwyg-view.js)**:
+1. Core editing: history(), dropCursor(), gapCursor()
+2. Smart input: createInputRules() for markdown shortcuts
+3. Keymaps: createKeymap() with custom commands, baseKeymap() fallback
+4. UI: menuPlugin() toolbar, createMarkdownStylingPlugin() styling  
+5. Fallback: Tab key handling prevention
 
 ## Dual-Mode Lifecycle
 

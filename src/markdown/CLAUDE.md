@@ -14,10 +14,10 @@ The markdown system implements bidirectional conversion with high fidelity:
 **Implementation**: `markdownSchema` in [schema.js](schema.js)
 
 **Key Features**:
-- Extends `basicSchema` with `addListNodes()` for markdown list support
-- Content expression: `paragraph block*` allows proper markdown structure
-- Standard markdown nodes: headings, blockquotes, code blocks, lists
-- Standard marks: strong, em, code, link
+- Uses default schema from `prosemirror-markdown` package directly
+- Exports convenient node and mark references for easy access
+- Standard markdown nodes: doc, paragraph, heading, blockquote, horizontal_rule, code_block, ordered_list, bullet_list, list_item, text, image, hard_break
+- Standard marks: em, strong, link, code
 
 ## Parser Implementation
 

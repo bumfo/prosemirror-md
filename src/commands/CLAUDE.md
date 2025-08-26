@@ -8,6 +8,7 @@ The implementation includes three key custom behaviors:
 - **customBackspace** - Block-to-paragraph conversion instead of deletion
 - **customJoinBackward** - Intelligent block joining with structural awareness  
 - **Transform utilities** - Document manipulation helpers
+- **Debug support** - Optional debug logging for command tracing
 
 ## Core Commands
 
@@ -15,20 +16,20 @@ The implementation includes three key custom behaviors:
 
 **Key Innovation**: At block start, converts block to paragraph instead of deleting content.
 
-**Implementation**: `customBackspace()` in [commands.js](commands.js)
+**Implementation**: `customBackspace(schema)` in [commands.js](commands.js)
 
 **Fallback Chain**:
 1. Block reset (heading/blockquote → paragraph)
 2. List handling (`liftListItem` for list items)
-3. Standard ProseMirror fallbacks (lift → join → select)
+3. Standard ProseMirror fallbacks (lift → customJoinBackward → joinBackward → selectNodeBackward)
 
 ### customJoinBackward Algorithm  
 
 **Key Innovation**: Uses `findCutBefore()` and `deleteBarrier()` for intelligent block joining.
 
-**Implementation**: `customJoinBackward()` in [commands.js](commands.js)
+**Implementation**: `customJoinBackward(schema)` in [commands.js](commands.js)
 
-**Process**: Verify cursor position → find cut position → execute barrier removal
+**Process**: Verify cursor at block start → find cut position using `findCutBefore()` → execute barrier removal with `deleteBarrier()`
 
 ## Transform Utilities
 

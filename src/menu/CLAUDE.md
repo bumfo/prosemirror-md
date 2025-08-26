@@ -25,11 +25,11 @@ The menu system implements several project-specific optimizations and behaviors:
 
 **Custom Algorithm**: Caches expensive state calculations once per transaction and passes results to all menu items, eliminating redundant document traversals.
 
-**Implementation**: `MenuPlugin.computeContext()` in [menu.js](menu.js)
+**Implementation**: `StateContext` class in [menu.js](menu.js)
 
 ### Icon System
 
-**Implementation**: Icon definitions in [icons.js](icons.js) - supports SVG paths, text, and HTML formats.
+**Implementation**: Icon definitions in [icons.js](icons.js) - supports SVG HTML strings for all menu items.
 
 ## Custom Toggle Behavior
 
@@ -63,6 +63,6 @@ Single computation per transaction eliminates redundant document traversals acro
 
 ## Plugin Integration
 
-**menuPlugin()** function in [menu.js](menu.js) creates the ProseMirror plugin that coordinates menu state with editor transactions.
+**menuBar()** function in [menubar.js](menubar.js) creates the ProseMirror plugin that coordinates menu state with editor transactions.
 
-**createKeymap()** function in [menu.js](menu.js) generates keyboard shortcuts that use the same commands as menu items.
+**createKeymap()** function in [../editor/menu.js](../editor/menu.js) generates keyboard shortcuts that use the same commands as menu items.
