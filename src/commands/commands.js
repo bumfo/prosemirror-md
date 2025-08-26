@@ -5,7 +5,7 @@ import { atBlockStart, deleteBarrier, findCutBefore } from './transforms.js';
 /**
  * Debug flag for command logging
  */
-const DEBUG = false;
+const DEBUG = true;
 
 /**
  * Exact copy of joinBackward from prosemirror-commands
@@ -68,7 +68,7 @@ export function customBackspace(schema) {
                 const paragraphIndex = $from.index($from.depth - 1);
 
                 if (paragraphIndex > 0) {
-                    // if (DEBUG) console.log('lift');
+                    if (DEBUG) console.log('lift');
                     if (lift(state, dispatch)) {
                         return true;
                     }
@@ -82,23 +82,37 @@ export function customBackspace(schema) {
                 // Handle nested list items
                 const ancestor = $from.node($from.depth - 3);
                 if (ancestor && ancestor.type === schema.nodes.list_item) {
-                    if (joinBackward(state, dispatch)) {
-                        return true;
+                    // Check if current list item is the first child of its parent list
+                    const parentList = $from.node($from.depth - 2);
+                    const listItemIndex = $from.index($from.depth - 2);
+                    
+                    if (listItemIndex === 0) {
+                        // First item in nested list - try joinBackward to merge with ancestor
+                        if (DEBUG) console.log('first item in nested list, joinBackward');
+                        if (joinBackward(state, dispatch)) {
+                            return true;
+                        }
+                    } else {
+                        // Not first item - try liftListItem instead
+                        if (DEBUG) console.log('not first item in nested list, lift');
+                        if (lift(state, dispatch)) {
+                            return true;
+                        }
                     }
                 } else {
-                    // if (DEBUG) console.log('in list item, trying liftListItem');
+                    if (DEBUG) console.log('in list item, trying liftListItem');
                     if (liftListCommand(state, dispatch)) {
                         return true;
                     }
                 }
             }
 
-            // if (DEBUG) console.log('lift');
+            if (DEBUG) console.log('lift');
             if (lift(state, dispatch)) {
                 return true;
             }
 
-            // if (DEBUG) console.log('customJoinBackward');
+            if (DEBUG) console.log('customJoinBackward');
             if (customJoinBackward(schema)(state, dispatch)) {
                 return true;
             }
