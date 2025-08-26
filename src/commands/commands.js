@@ -5,9 +5,16 @@ import { findWrapping, ReplaceAroundStep, canSplit, liftTarget, canJoin } from '
 import { NodeRange, Fragment, Slice } from 'prosemirror-model';
 
 /**
+ * @typedef {import('prosemirror-state').EditorState} EditorState
+ * @typedef {import('prosemirror-model').Schema} Schema
+ * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
+ */
+
+/**
  * Debug flag for command logging
  */
 const DEBUG = true;
+
 
 /**
  * Exact copy of joinBackward from prosemirror-commands
@@ -17,6 +24,7 @@ const DEBUG = true;
  * If not, try to move the selected block closer to the next one in
  * the document structure by lifting it out of its parent or moving it
  * into a parent of the previous block.
+ * @returns {Command}
  */
 export function customJoinBackward(schema) {
     return (state, dispatch, view) => {
@@ -35,13 +43,19 @@ export function customJoinBackward(schema) {
 
 /**
  * Custom backspace command that resets block to paragraph first
- * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
+ * @param {Schema} schema - ProseMirror schema
+ * @returns {Command} Custom backspace command
  */
 export function customBackspace(schema) {
     const itemType = schema.nodes.list_item;
 
-    return (state, dispatch, view) => {
+    /**
+     * @param {EditorState} state
+     * @param {(tr: any) => void} dispatch
+     * @param {any} view
+     * @returns {boolean}
+     */
+    function command(state, dispatch, view) {
         if (!state.selection.empty) {
             return false;
         }
@@ -82,8 +96,7 @@ export function customBackspace(schema) {
                     if (DEBUG) console.log('second+ paragraph in list item, lift');
                     if (lift(state, dispatch)) {
                         return true;
-                    }
-                }
+            }
 
                 // Handle nested list items
                 const ancestor = $from.node($from.depth - 3);
@@ -138,13 +151,15 @@ export function customBackspace(schema) {
 
 
         return true;
-    };
+    }
+
+    return command;
 }
 
 /**
  * Custom sink list item command that skips sinking for multi-paragraph list items
- * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Custom sink list item command
+ * @param {Schema} schema - ProseMirror schema
+ * @returns {Command} Custom sink list item command
  */
 export function customSinkListItem(schema) {
     const itemType = schema.nodes.list_item;
@@ -181,8 +196,8 @@ export function customSinkListItem(schema) {
 
 /**
  * Custom lift list item command that skips lifting for multi-paragraph list items
- * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Custom lift list item command
+ * @param {Schema} schema - ProseMirror schema
+ * @returns {Command} Custom lift list item command
  */
 export function customLiftListItem(schema) {
     const itemType = schema.nodes.list_item;
@@ -217,6 +232,13 @@ export function customLiftListItem(schema) {
     };
 }
 
+/**
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {any} itemType
+ * @param {NodeRange} range
+ * @returns {boolean}
+ */
 function liftToOuterList(state, dispatch, itemType, range) {
     console.log('liftToOuterList');
     let tr = state.tr, end = range.end, endOfList = range.$to.end(range.depth);
@@ -237,6 +259,12 @@ function liftToOuterList(state, dispatch, itemType, range) {
     return true;
 }
 
+/**
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {NodeRange} range
+ * @returns {boolean}
+ */
 function liftOutOfList(state, dispatch, range) {
     console.log('liftOutOfList');
     let tr = state.tr, list = range.parent;
