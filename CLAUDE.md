@@ -168,52 +168,27 @@ npx eslint src/
 ### External Dependencies
 - `markdown-it` - Markdown parsing library used by prosemirror-markdown
 
-## Editor Implementation Details
+## Editor Architecture
 
-### View Switching Architecture
+Dual-mode editing system that seamlessly switches between WYSIWYG and markdown editing modes.
 
-The `EditorManager` class handles switching between views:
+### Core Components
+- **EditorManager** - Orchestrates mode switching and content conversion
+- **ProseMirrorView** - Rich text WYSIWYG editor with full ProseMirror capabilities  
+- **MarkdownView** - Enhanced textarea for direct markdown editing
+- **Plugin Integration** - Menu system, input rules, and custom commands
 
-```js
-class EditorManager {
-    switchToView(mode, content = null) {
-        const currentContent = content || this.currentView.getContent();
-        this.currentView.destroy();
-        
-        const ViewClass = mode === 'wysiwyg' ? ProseMirrorView : MarkdownView;
-        this.currentView = new ViewClass(this.target, currentContent);
-        this.currentView.focus();
-    }
-}
-```
+### Key Features
+- **Seamless Switching** - Instant mode transitions with content preservation
+- **Smart Input Rules** - Type `#` + space for headings, `*` + space for lists
+- **Enhanced Textarea** - Auto-resize, tab handling, keyboard shortcuts
+- **Markdown-like Styling** - WYSIWYG visually resembles rendered markdown
+- **Focus Management** - Proper focus handling during mode transitions
 
-### WYSIWYG View (ProseMirror)
+### Plugin Stack
+The WYSIWYG editor includes history, drop cursor, gap cursor, custom menu system, input rules for smart typing, enhanced commands, and markdown-like styling.
 
-Key implementation patterns:
-```js
-// Parse markdown into ProseMirror document
-const doc = parseMarkdown(content);
-
-// Create editor state with plugins
-const state = EditorState.create({
-    doc,
-    plugins: exampleSetup({ schema: markdownSchema })
-});
-
-// Create view with custom dispatch
-const view = new EditorView(target, {
-    state,
-    dispatchTransaction: this.dispatchTransaction.bind(this)
-});
-```
-
-### Markdown View (Textarea)
-
-Simple textarea implementation with enhancements:
-- Auto-resize functionality
-- Tab insertion handling
-- Keyboard shortcuts
-- Proper font and styling
+For detailed implementation information, see [src/editor/CLAUDE.md](src/editor/CLAUDE.md).
 
 ## Extension Development Guidelines
 
@@ -298,40 +273,28 @@ const extendedSchema = new Schema({
 - **Incremental Parsing** - Only changed content is re-parsed during view switches
 - **Lazy Loading** - Heavy features can be loaded on demand
 
-## Markdown Conversion
+## Markdown Processing
 
-### Parser Configuration
+Bidirectional conversion system between markdown text and ProseMirror documents with high fidelity.
 
-The parser handles all standard markdown elements:
-```js
-export const markdownParser = MarkdownParser.fromSchema(markdownSchema, {
-    blockquote: { block: "blockquote", wrap: true },
-    paragraph: { block: "paragraph" },
-    heading: { 
-        block: "heading",
-        getAttrs: (tok) => ({ level: +tok.tag.slice(1) })
-    }
-    // ... more node mappings
-});
-```
+### Core Components
+- **Schema** - ProseMirror document structure definition for markdown elements
+- **Parser** - Converts markdown text to ProseMirror documents using markdown-it
+- **Serializer** - Converts ProseMirror documents back to clean markdown text
 
-### Serializer Configuration
+### Supported Elements
+All standard markdown syntax including headings, lists, blockquotes, code blocks, emphasis, links, and horizontal rules. The system maintains proper nesting rules and content validation.
 
-The serializer converts back to markdown:
-```js
-export const markdownSerializer = new MarkdownSerializer({
-    heading(state, node) {
-        state.write(state.repeat("#", node.attrs.level) + " ");
-        state.renderInline(node);
-        state.closeBlock(node);
-    }
-    // ... more node serializers
-}, {
-    em: { open: "*", close: "*", mixable: true },
-    strong: { open: "**", close: "**", mixable: true }
-    // ... more mark serializers  
-});
-```
+### Conversion Features
+- **High Fidelity** - Preserves content and structure across conversions
+- **Error Handling** - Graceful degradation for invalid markdown
+- **Performance** - Efficient parsing and serialization for large documents
+- **Extensible** - Schema can be extended with custom markdown elements
+
+### Usage
+The conversion functions integrate seamlessly with the editor's mode switching, automatically handling content transformation when users switch between WYSIWYG and markdown views.
+
+For detailed implementation information, see [src/markdown/CLAUDE.md](src/markdown/CLAUDE.md).
 
 ## Styling System
 
@@ -490,296 +453,47 @@ const menu = menuBar({
 });
 ```
 
-## Menu System Architecture
+## Menu System
 
-### Overview
+Custom-built toolbar system with optimized state management for ProseMirror editors.
 
-The project includes a **custom-built** sophisticated menu system (`src/menu/`) that provides reusable components for building ProseMirror toolbars and menus. This is a completely independent implementation (not dependent on the official `prosemirror-menu` package) that offers optimized performance through intelligent state caching and a flexible API for creating custom menu items.
+### Architecture
+- **MenuItem** class - Encapsulates menu item behavior with smart state caching
+- **MenuBar** component - Renders grouped toolbar items with separators
+- **StateContext** - Performance optimization that caches expensive state calculations
+- **Icons** - SVG-based icon system with flexible rendering options
+- **TypeScript** definitions for IDE support
 
-### Core Components
+### Key Features
+- Smart active state detection (only active when entire selection has mark)
+- Optimized DOM updates through state caching
+- Flexible icon system (text, SVG, or custom DOM)
+- Keyboard shortcut integration
+- Enhanced toggle behavior that prioritizes applying marks
 
-#### MenuItem Class
+### Usage Pattern
+Create MenuItem instances with commands and display properties, group them into arrays for toolbar sections, then initialize MenuBar. The menu plugin handles ProseMirror integration automatically.
 
-The `MenuItem` class is the foundation of the menu system:
+For detailed implementation information, see [src/menu/CLAUDE.md](src/menu/CLAUDE.md).
 
-```js
-import { MenuItem } from './src/menu/index.js';
+## Custom Commands
 
-const boldItem = new MenuItem({
-    title: "Toggle Bold",
-    icon: { text: "B", css: "font-weight: bold" },
-    run: customToggleMark(schema.marks.strong),
-    active: (state, context) => markActive(schema.marks.strong)(state, context),
-    enable: (state) => customToggleMark(schema.marks.strong)(state)
-});
-```
+Enhanced editing commands that provide more intuitive behavior than standard ProseMirror commands.
 
-**Key Features:**
-- **Optimized Rendering**: Caches previous states to avoid unnecessary DOM updates
-- **Flexible Icons**: Supports HTML, text, and CSS-based icons
-- **State Management**: Active, enabled, and visibility states with context optimization
-- **Event Handling**: Proper focus management and command execution
+### Available Commands
+- **customBackspace** - Smart backspace that converts blocks to paragraphs instead of deleting content
+- **customJoinBackward** - Improved block joining with better structural understanding
+- **Transform utilities** - Low-level helpers for document manipulation
 
-#### StateContext Optimization
+### Key Improvements
+- **Block Reset**: At start of headings/blockquotes, backspace converts to paragraph rather than deleting
+- **List Handling**: Smart list item lifting and management
+- **Structural Awareness**: Commands understand document structure for better joining behavior
+- **Fallback Chain**: Multiple strategies ensure robust editing in edge cases
 
-The menu system uses a `StateContext` object to optimize expensive state calculations:
+### Usage
+Commands integrate with ProseMirror's keymap system and are bound to standard keys like 'Backspace'. They follow ProseMirror's command signature and chain properly with other commands.
 
-```js
-// Context is computed once per transaction
-const context = {
-    markActive: (markType) => /* cached result */,
-    blockActive: (nodeType) => /* cached result */,
-    // ... other cached state functions
-};
-
-// Passed to all menu items for efficient state checking
-menuItem.update(state, context);
-```
-
-#### MenuBar Component
-
-Creates a complete toolbar with grouped menu items:
-
-```js
-import { MenuBar } from './src/menu/index.js';
-
-const toolbar = new MenuBar([
-    // Bold, Italic, Code group
-    [boldItem, italicItem, codeItem],
-    // Heading group
-    [h1Item, h2Item, h3Item],
-    // List group
-    [bulletListItem, orderedListItem]
-]);
-```
-
-### Icon System
-
-The menu system includes a comprehensive icon set with SVG-based icons:
-
-```js
-import { icons } from './src/menu/index.js';
-
-// Available icons
-icons.strong    // Bold (B)
-icons.em        // Italic (I)  
-icons.code      // Code (</>) 
-icons.link      // Link (🔗)
-icons.bulletList    // Bullet list
-icons.orderedList   // Numbered list
-icons.blockquote    // Quote block
-icons.undo      // Undo arrow
-icons.redo      // Redo arrow
-```
-
-## Custom Commands Implementation
-
-### Overview
-
-The project implements several **custom commands** that enhance the editing experience beyond standard ProseMirror behavior. These are entirely custom implementations located in `src/commands/` (not dependent on any external packages) and provide more intuitive text editing workflows.
-
-### Custom Backspace Command
-
-The `customBackspace` function provides enhanced backspace behavior:
-
-```js
-import { customBackspace } from './src/commands/index.js';
-
-// Usage in keymap
-keymap({
-    'Backspace': customBackspace(schema)
-})
-```
-
-**Behavior:**
-1. **Block Reset**: When at the start of a non-paragraph block (heading, blockquote, etc.), converts it to a paragraph instead of deleting
-2. **List Handling**: In list items, attempts to lift the item out of the list structure
-3. **Smart Joining**: Uses custom join logic that better handles complex document structures
-4. **Fallback Chain**: Falls back through multiple strategies (lift, join, select) for robust editing
-
-**Example Workflow:**
-- Cursor at start of `# Heading` → Press Backspace → Becomes `Heading` (paragraph)
-- Cursor at start of list item → Press Backspace → Lifts item out of list
-- Cursor at start of paragraph → Press Backspace → Joins with previous block
-
-### Custom Join Backward
-
-The `customJoinBackward` function improves block joining:
-
-```js
-function customJoinBackward(schema) {
-    return (state, dispatch, view) => {
-        let $cursor = atBlockStart(state, view);
-        if (!$cursor) return false;
-
-        let $cut = findCutBefore($cursor);
-        if (!$cut) return false;
-
-        return deleteBarrier(state, $cut, dispatch, -1);
-    };
-}
-```
-
-**Features:**
-- **Smart Cut Detection**: Finds the optimal position to join blocks
-- **Barrier Deletion**: Removes structural barriers between blocks intelligently  
-- **Fallback Support**: Integrates with standard ProseMirror commands when needed
-
-### Transform Utilities
-
-The `src/commands/transforms.js` file provides low-level document transformation utilities:
-
-- **`atBlockStart`**: Detects if cursor is at the beginning of a block
-- **`findCutBefore`**: Finds the position where blocks can be joined
-- **`deleteBarrier`**: Removes structural barriers between document nodes
-
-These utilities support the custom commands and can be used to build additional editing behaviors.
-
-### TypeScript Integration
-
-The menu system includes comprehensive TypeScript definitions in `src/menu/menu.d.ts`:
-
-```typescript
-export interface MenuItemSpec {
-    run: CommandFn;
-    select?: (state: EditorState, context?: StateContext) => boolean;
-    enable?: (state: EditorState, context?: StateContext) => boolean;
-    active?: (state: EditorState, context?: StateContext) => boolean;
-    render?: (view: EditorView) => {dom: HTMLElement, update: (state: EditorState) => boolean};
-    icon?: IconSpec;
-    label?: string;
-    title?: string | ((state: EditorState) => string);
-    class?: string;
-    css?: string;
-}
-
-export interface StateContext {
-    markActive: (markType: MarkType) => boolean;
-    blockActive: (nodeType: NodeType, attrs?: {[key: string]: any}) => boolean;
-    canInsert: (nodeType: NodeType) => boolean;
-    wrapCommand: (nodeType: NodeType) => CommandFn;
-}
-```
-
-These types provide excellent IDE support and help catch errors during development.
-
-## Custom Mark Toggle Logic
-
-### Overview
-
-This implementation uses a custom `customToggleMark` function instead of ProseMirror's standard `toggleMark` command to provide a more intuitive user experience when working with partially formatted text selections.
-
-### Standard vs Custom Behavior
-
-#### Standard ProseMirror Behavior
-- **Active State**: Button shows active if ANY part of selection has the mark
-- **Click Action**: Removes marks from parts that have them, applies to parts that don't
-- **Result**: Often removes formatting when user expects to apply it
-
-#### Our Custom Behavior  
-- **Active State**: Button shows active only if ENTIRE selection has the mark
-- **Click Action**: Prioritizes applying marks over removing them
-- **Result**: More predictable "apply formatting" workflow
-
-### Implementation Details
-
-```javascript
-export function customToggleMark(markType) {
-    return (state, dispatch, view) => {
-        const { from, to, empty } = state.selection;
-
-        if (empty) {
-            // For collapsed cursor, use standard toggleMark behavior
-            return toggleMark(markType)(state, dispatch, view);
-        }
-
-        // For selections, check if ENTIRE selection has the mark
-        let allTextHasMark = true;
-        let hasAnyText = false;
-
-        state.doc.nodesBetween(from, to, (node, pos) => {
-            if (node.isText && node.text.length > 0) {
-                hasAnyText = true;
-                if (!markType.isInSet(node.marks)) {
-                    allTextHasMark = false;
-                    return false; // Stop iteration
-                }
-            }
-        });
-
-        if (!hasAnyText) return false;
-
-        if (!dispatch) return true; // Just checking if command is available
-
-        let tr = state.tr;
-
-        if (allTextHasMark) {
-            // All text has the mark -> remove it
-            tr = tr.removeMark(from, to, markType);
-        } else {
-            // Not all text has the mark -> apply it to entire selection
-            tr = tr.addMark(from, to, markType.create());
-        }
-
-        dispatch(tr);
-        return true;
-    };
-}
-```
-
-### Key Logic Points
-
-1. **Collapsed Cursor**: Uses standard `toggleMark` for consistency with existing ProseMirror patterns
-
-2. **Text Detection**: Only operates on actual text nodes with content, ignoring empty nodes
-
-3. **All-or-Nothing Check**: Iterates through all text in selection, stopping early if any text lacks the mark
-
-4. **State Alignment**: The behavior perfectly matches the visual active state:
-   - Inactive button → Apply mark to entire selection
-   - Active button → Remove mark from entire selection
-
-### Use Cases
-
-#### Scenario 1: Partially Bold Text
-- Selection: "Hello **world** everyone"  
-- Bold button shows: **Inactive** (not all text is bold)
-- Click action: **Applies bold** to entire selection
-- Result: "**Hello world everyone**"
-
-#### Scenario 2: Fully Bold Text  
-- Selection: "**Hello world everyone**"
-- Bold button shows: **Active** (all text is bold)
-- Click action: **Removes bold** from entire selection  
-- Result: "Hello world everyone"
-
-#### Scenario 3: Mixed Formatting
-- Selection: "**Hello** *world* `everyone`"
-- Bold button shows: **Inactive** (not all text is bold)
-- Click action: **Applies bold** to entire selection
-- Result: "***Hello* *world* `everyone`**" (other marks preserved)
-
-### Integration
-
-The custom toggle logic is applied to:
-- **Toolbar buttons**: Bold, Italic, Code buttons
-- **Keyboard shortcuts**: Cmd/Ctrl+B, Cmd/Ctrl+I, Cmd/Ctrl+`
-- **Active state detection**: `markActive` function aligned with toggle behavior
-
-### Benefits
-
-1. **Predictable UX**: Users can predict button behavior from visual state
-2. **Formatting Priority**: Encourages applying formatting over removing it  
-3. **Reduced Frustration**: No unexpected mark removal during formatting workflows
-4. **Consistent State**: Visual indicators perfectly match click actions
-
-### Technical Notes
-
-- **Performance**: Early termination when finding unmarked text optimizes large selections
-- **Transaction Safety**: Creates single transaction for entire operation
-- **Mark Preservation**: Other marks are preserved when applying new ones
-- **History Integration**: Each operation creates one undo step
-
-This custom approach trades strict ProseMirror convention for improved user experience, particularly beneficial in collaborative and educational editing contexts where users expect consistent formatting behavior.
+For detailed implementation information, see [src/commands/CLAUDE.md](src/commands/CLAUDE.md).
 
 This documentation provides a comprehensive guide to understanding, developing, and extending the ProseMirror markdown editor. The modular architecture and clear separation of concerns make it easy to customize and enhance for specific use cases.
