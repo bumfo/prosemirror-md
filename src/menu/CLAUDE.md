@@ -23,9 +23,21 @@ The menu system implements several project-specific optimizations and behaviors:
 
 ### StateContext Optimization
 
-**Custom Algorithm**: Caches expensive state calculations once per transaction and passes results to all menu items, eliminating redundant document traversals.
+**Performance Problem Solved**: Before optimization, menu updates had O(n × m) complexity where each menu item (n ≈ 15) independently performed expensive operations (m = document traversals, position resolution, mark analysis).
+
+**Custom Algorithm**: StateContext pre-computes expensive operations once per update, reducing complexity from O(n × m) to O(n + m).
 
 **Implementation**: `StateContext` class in [menu.js](menu.js)
+
+**Pre-computed Data**:
+- Position resolvers: `$from`, `$to` via `doc.resolve()`  
+- Block analysis: `parentNode`, `parentType`, `parentAttrs`, `selectionAtBlockEnd`
+- Mark analysis: `marksAtPosition` (cursor) or `selectionMarks` (selection)
+- Selection state: `empty`, `from`, `to`, `nodeSelection`
+
+**Mark Analysis Algorithm**: For selections, `computeSelectionMarks()` traverses all text nodes once, building intersection of marks present throughout entire selection.
+
+**Efficient Lookups**: `isMarkActive()` and `isBlockActive()` methods provide O(1) lookups on pre-computed data instead of O(m) document traversals.
 
 ### Icon System
 
@@ -54,8 +66,26 @@ The menu system implements several project-specific optimizations and behaviors:
 ### DOM Update Caching
 MenuItem instances cache `lastVisible`, `lastEnabled`, and `lastActive` states to only update DOM when state actually changes between transactions.
 
+**Implementation**: Each MenuItem tracks three cached states:
+```javascript
+let lastVisible = null;
+let lastEnabled = null; 
+let lastActive = null;
+```
+
+**Optimization**: Only calls DOM manipulation methods (`setClass()`, `style.display`) when cached state differs from computed state.
+
 ### StateContext Performance  
-Single computation per transaction eliminates redundant document traversals across multiple menu items.
+**Before**: O(n × m) - each menu item performed independent document analysis
+**After**: O(n + m) - shared StateContext computes expensive operations once
+
+**Key Operations Cached**:
+- Document position resolution (`doc.resolve()` calls)
+- Mark intersection analysis across text selections  
+- Parent node property lookups
+- Selection boundary calculations
+
+**Memory vs Speed Tradeoff**: StateContext creates temporary objects per update but eliminates redundant computation, resulting in net performance gain for typical menu sizes (10-20 items).
 
 ## TypeScript Integration
 
