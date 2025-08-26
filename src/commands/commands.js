@@ -8,6 +8,7 @@ import { NodeRange, Fragment, Slice } from 'prosemirror-model';
  * @typedef {import('prosemirror-state').EditorState} EditorState
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
+ * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
  * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
  */
 
@@ -59,6 +60,8 @@ export function customBackspace(schema) {
     function backspaceList(state, dispatch) {
         let { $from, $to, from } = state.selection;
 
+        console.log('backspaceList', $from, $to, $from.parent.toString(), $to.parent.toString());
+
         let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
         let listRange = $from.blockRange($to, listPredicate);
         if (listRange) {
@@ -67,6 +70,21 @@ export function customBackspace(schema) {
             const paragraphIndex = $from.index($from.depth - 1);
             if (paragraphIndex > 0) {
                 if (DEBUG) console.log('second+ paragraph in list item, skip');
+
+                let pos = $from.before($from.depth);
+                let $pos = state.doc.resolve(pos);
+                console.log(pos, $pos);
+
+                let tr = state.tr;
+
+                let nextType = pos === $pos.end() ? $pos.parent.contentMatchAt(0).defaultType : null;
+                let types = nextType ? [null, { type: nextType }] : undefined;
+
+                if (canSplit(tr.doc, pos, 1, types)) {
+                    tr.split(pos, 1, types);
+                    dispatch(tr);
+                    return true;
+                }
 
                 // if (lift(state, dispatch)) {
                 // }
@@ -81,6 +99,12 @@ export function customBackspace(schema) {
             }
 
             if ($from.node(listRange.depth - 1).type === itemType) { // Inside a parent list
+                if (paragraphIndex > 0) {
+                    if (liftToOuterList(state, dispatch, itemType, listRange)) {
+                        return true;
+                    }
+                }
+
                 if (liftOutOfList(state, dispatch, listRange)) {
                     return true;
                 }
@@ -95,7 +119,7 @@ export function customBackspace(schema) {
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -133,7 +157,7 @@ export function customBackspace(schema) {
             return true;
         }
         // Else, already a paragraph, try various backspace behaviors            
-        
+
         if (backspaceList(state, dispatch)) {
             return true;
         }
