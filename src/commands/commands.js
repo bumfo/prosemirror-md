@@ -37,6 +37,8 @@ export function customJoinBackward(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
  */
 export function customBackspace(schema) {
+    let liftListCommand = liftListItem(schema.nodes.list_item);
+
     return (state, dispatch, view) => {
         if (!state.selection.empty) {
             return false;
@@ -66,12 +68,15 @@ export function customBackspace(schema) {
                 const paragraphIndex = $from.index($from.depth - 1);
 
                 if (paragraphIndex > 0) {
-                    // This is not the first paragraph in the list item
-                    // Try joinBackward to merge with the previous paragraph
-                    if (DEBUG) console.log('second+ paragraph in list item, trying joinBackward');
-                    if (joinBackward(state, dispatch)) {
+                    // if (DEBUG) console.log('lift');
+                    if (lift(state, dispatch)) {
                         return true;
                     }
+
+                    // if (DEBUG) console.log('second+ paragraph in list item, trying joinBackward');
+                    // if (joinBackward(state, dispatch)) {
+                    //     return true;
+                    // }
                 }
 
                 // Handle nested list items
@@ -82,7 +87,7 @@ export function customBackspace(schema) {
                     }
                 } else {
                     // if (DEBUG) console.log('in list item, trying liftListItem');
-                    if (liftListItem(schema.nodes.list_item)(state, dispatch)) {
+                    if (liftListCommand(state, dispatch)) {
                         return true;
                     }
                 }
