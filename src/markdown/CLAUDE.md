@@ -21,15 +21,31 @@ The markdown system implements bidirectional conversion with high fidelity:
 
 ## Parser Implementation
 
-**Implementation**: `parseMarkdown()` in [parser.js](parser.js)
+**Implementation**: Default CommonMark parser from prosemirror-markdown in [parser.js](parser.js)
 
-Uses `MarkdownParser.fromSchema()` with markdown-it to convert markdown tokens to ProseMirror nodes. Includes standard mappings for all markdown elements and graceful error handling.
+**Key Components**:
+- `markdownParser` - Uses `MarkdownParser` with MarkdownIt('commonmark') configuration
+- Complete token mappings for all standard markdown elements
+- `listIsTight()` helper - Determines tight vs loose list formatting
+- Supports: blockquotes, paragraphs, lists, headings, code blocks, images, links, emphasis
+
+**Token Mappings**:
+- Block elements: blockquote, paragraph, list_item, bullet_list, ordered_list, heading, code_block
+- Inline nodes: image, hard_break
+- Marks: em, strong, link, code
 
 ## Serializer Implementation
 
-**Implementation**: `serializeMarkdown()` in [serializer.js](serializer.js)
+**Implementation**: Default CommonMark serializer from prosemirror-markdown in [serializer.js](serializer.js)
 
-Uses `MarkdownSerializer` to convert ProseMirror documents back to clean markdown with proper formatting and syntax preservation.
+**Key Components**:
+- `markdownSerializer` - Converts ProseMirror documents to clean markdown
+- `backticksFor()` helper - Calculates proper backtick escaping for code marks
+- `isPlainURL()` helper - Detects auto-linkable URLs for cleaner output
+- Smart formatting: proper list indentation, code fence detection, link handling
+
+**Node Serializers**: Custom serialization functions for blockquote, code_block, heading, lists, images, etc.
+**Mark Serializers**: Proper escaping and formatting for emphasis, strong, links, and inline code
 
 ## Integration Details
 
