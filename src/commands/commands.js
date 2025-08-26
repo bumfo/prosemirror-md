@@ -1,6 +1,8 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { atBlockStart, deleteBarrier, findCutBefore } from './transforms.js';
+import { findWrapping, ReplaceAroundStep, canSplit, liftTarget, canJoin } from 'prosemirror-transform';
+import { NodeRange, Fragment, Slice } from 'prosemirror-model';
 
 /**
  * Debug flag for command logging
@@ -37,7 +39,7 @@ export function customJoinBackward(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
  */
 export function customBackspace(schema) {
-    let liftListCommand = liftListItem(schema.nodes.list_item);
+    let liftListCommand = backspaceListItem(schema.nodes.list_item);
 
     return (state, dispatch, view) => {
         if (!state.selection.empty) {
@@ -62,6 +64,11 @@ export function customBackspace(schema) {
             // Check if we're in a list item and handle different scenarios
             const grandparent = $from.node($from.depth - 1);
             if (grandparent && grandparent.type === schema.nodes.list_item) {
+                if (DEBUG) console.log('in list item, trying liftListItem');
+                if (liftListCommand(state, dispatch)) {
+                    return true;
+                }
+
                 // Check if this is a second (or later) paragraph in a list item
                 // Pattern: <li><p>first</p><p>|second</p></li> where | is cursor
                 const listItemNode = grandparent;
@@ -85,7 +92,7 @@ export function customBackspace(schema) {
                     // Check if current list item is the first child of its parent list
                     const parentList = $from.node($from.depth - 2);
                     const listItemIndex = $from.index($from.depth - 2);
-                    
+
                     if (listItemIndex === 0) {
                         // First item in nested list - try joinBackward to merge with ancestor
                         if (DEBUG) console.log('first item in nested list, joinBackward');
@@ -212,4 +219,67 @@ export function customLiftListItem(schema) {
         // or first paragraph of multi-paragraph list items
         return liftListCommand(state, dispatch, view);
     };
+}
+
+
+/**
+ Create a command to lift the list item around the selection up into
+ a wrapping list.
+ */
+function backspaceListItem(itemType) {
+    return function (state, dispatch) {
+        let { $from, $to } = state.selection;
+        let range = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
+        if (!range)
+            return false;
+        if (!dispatch)
+            return true;
+        if ($from.node(range.depth - 1).type === itemType) // Inside a parent list
+            return liftToOuterList(state, dispatch, itemType, range);
+        else // Outer list node
+            return liftOutOfList(state, dispatch, range);
+    };
+}
+
+function liftToOuterList(state, dispatch, itemType, range) {
+    let tr = state.tr, end = range.end, endOfList = range.$to.end(range.depth);
+    if (end < endOfList) {
+        // There are siblings after the lifted items, which must become
+        // children of the last item
+        tr.step(new ReplaceAroundStep(end - 1, endOfList, end, endOfList, new Slice(Fragment.from(itemType.create(null, range.parent.copy())), 1, 0), 1, true));
+        range = new NodeRange(tr.doc.resolve(range.$from.pos), tr.doc.resolve(endOfList), range.depth);
+    }
+    const target = liftTarget(range);
+    if (target == null)
+        return false;
+    tr.lift(range, target);
+    let $after = tr.doc.resolve(tr.mapping.map(end, -1) - 1);
+    if (canJoin(tr.doc, $after.pos) && $after.nodeBefore.type === $after.nodeAfter.type)
+        tr.join($after.pos);
+    dispatch(tr.scrollIntoView());
+    return true;
+}
+
+function liftOutOfList(state, dispatch, range) {
+    let tr = state.tr, list = range.parent;
+    // Merge the list items into a single big item
+    for (let pos = range.end, i = range.endIndex - 1, e = range.startIndex; i > e; i--) {
+        pos -= list.child(i).nodeSize;
+        tr.delete(pos - 1, pos + 1);
+    }
+    let $start = tr.doc.resolve(range.start), item = $start.nodeAfter;
+    if (tr.mapping.map(range.end) !== range.start + $start.nodeAfter.nodeSize)
+        return false;
+    let atStart = range.startIndex === 0, atEnd = range.endIndex === list.childCount;
+    let parent = $start.node(-1), indexBefore = $start.index(-1);
+    if (!parent.canReplace(indexBefore + (atStart ? 0 : 1), indexBefore + 1, item.content.append(atEnd ? Fragment.empty : Fragment.from(list))))
+        return false;
+    let start = $start.pos, end = start + item.nodeSize;
+    // Strip off the surrounding list. At the sides where we're not at
+    // the end of the list, the existing list is closed. At sides where
+    // this is the end, it is overwritten to its end.
+    tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
+        .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
+    dispatch(tr.scrollIntoView());
+    return true;
 }
