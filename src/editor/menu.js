@@ -150,7 +150,7 @@ export function createMenuItems(schema) {
                 title: 'Bold (Mod-b)'
             }),
             markItem(schema.marks.em, {
-                icon: icons.itallic,
+                icon: icons.italic,
                 title: 'Italic (Mod-i)'
             }),
             markItem(schema.marks.code, {

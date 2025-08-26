@@ -13,7 +13,7 @@ export const icons = {
             '<path d="M5 12.5647H13.5C15.9853 12.5647 18 10.55 18 8.0647C18 5.57942 15.9853 3.5647 13.5 3.5647H5V12.5647ZM5 12.5647H15.5C17.9853 12.5647 20 14.5794 20 17.0647C20 19.55 17.9853 21.5647 15.5 21.5647H5V12.5647Z" stroke="black" stroke-width="2" stroke-linejoin="round"/>\n' +
             '</svg>',
     },
-    itallic: {
+    italic: {
         html: '<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
             '<path d="M9 3.5647H14M14 3.5647H18M14 3.5647L10 21.5647M10 21.5647H6M10 21.5647H15" stroke="black" stroke-width="2" stroke-linejoin="round"/>\n' +
             '</svg>',
