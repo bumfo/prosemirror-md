@@ -5,8 +5,8 @@ This document covers the project-specific implementation details of the custom m
 ## Custom Implementation Overview
 
 The menu system implements several project-specific optimizations and behaviors:
-- **StateContext** - Custom caching system for expensive state calculations
-- **customToggleMark** - Enhanced mark toggle behavior that prioritizes applying over removing
+- **Non-standard mark behavior** - Partial mark coverage shows inactive (prioritizes applying over removing)
+- **StateContext** - Custom caching system for expensive state calculations  
 - **Performance optimizations** - DOM update caching to minimize re-renders
 
 ## Core Components
@@ -29,25 +29,35 @@ The menu system implements several project-specific optimizations and behaviors:
 - Mark analysis: `marksAtPosition` (cursor) or `selectionMarks` (selection)
 - Selection state: `empty`, `from`, `to`, `nodeSelection`
 
-**Efficient Methods**: `isMarkActive()` and `isBlockActive()` provide O(1) lookups on cached data.
+**Efficient Methods**: `isMarkActive()` and `isBlockActive()` provide O(1) lookups on cached data, supporting the custom "all-or-nothing" mark detection logic.
 
 ### Icon System
 
 **Implementation**: Icon definitions in [icons.js](icons.js) - supports SVG HTML strings for all menu items.
 
-## Custom Toggle Behavior
+## Custom Toggle Behavior vs Standard ProseMirror
+
+### Key Behavioral Difference
+
+**Standard prosemirror-menu**: Selection with partial mark coverage shows as "active" and clicking removes the mark from marked portions.
+
+**Our Implementation**: Selection with partial mark coverage shows as "inactive" and clicking applies the mark to the entire selection.
 
 ### customToggleMark Algorithm
 
-**Key Innovation**: Unlike standard ProseMirror behavior, this implementation only shows active state when ENTIRE selection has the mark, and prioritizes applying marks over removing them.
+**Philosophy**: Prioritizes applying marks to complete selections over removing partial marks, providing more intuitive editing behavior.
 
 **Implementation**: `customToggleMark()` in [menu.js](menu.js)
 
 **Algorithm**:
-1. For collapsed selections - use standard behavior
-2. For text selections - iterate through all text nodes
-3. If any text lacks mark → apply to entire selection  
-4. If all text has mark → remove from entire selection
+1. **Collapsed selections**: Use standard ProseMirror behavior
+2. **Text selections**: Check if ALL text nodes have the mark
+   - If any text lacks mark → show inactive, apply mark to entire selection
+   - If all text has mark → show active, remove mark from entire selection
+
+**Example**: Select "**bold** normal text"
+- **Standard behavior**: Bold button active, click removes bold from "bold"  
+- **Our behavior**: Bold button inactive, click makes entire selection bold
 
 ### State Detection Functions
 
@@ -74,7 +84,7 @@ let lastActive = null;
 
 **Key Operations Shared**:
 - Document position resolution (`doc.resolve()` calls)
-- Mark intersection analysis across text selections via `computeSelectionMarks()`  
+- Mark intersection analysis across text selections via `computeSelectionMarks()` (required for "all-or-nothing" mark detection)
 - Parent node property lookups
 - Selection boundary calculations
 
