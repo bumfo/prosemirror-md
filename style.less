@@ -1,13 +1,14 @@
-// Variables
+// Import markdown-specific styles
+@import "./styles/markdown.less";
+
+// Main application variables
 @primary-color: #3498db;
 @primary-dark: #1976d2;
 @text-color: #2c3e50;
 @text-light: #6c757d;
-@text-dark: #1a202c;
 @border-color: #e9ecef;
 @background: #f8f9fa;
 @white: white;
-@code-pink: #e83e8c;
 @shadow: rgba(0,0,0,0.1);
 @shadow-light: rgba(0,0,0,0.05);
 
@@ -15,7 +16,7 @@
 @system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 @mono-font: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
 
-// Mixins
+// Mixins for UI components
 .button-base() {
     background: transparent;
     border: 1px solid transparent;
@@ -33,12 +34,6 @@
 
 .shadow(@opacity: 0.1) {
     box-shadow: 0 2px 8px rgba(0,0,0,@opacity);
-}
-
-.heading-base() {
-    font-weight: 600;
-    line-height: 1.25;
-    color: @text-dark;
 }
 
 // Global Styles
@@ -158,25 +153,7 @@ body {
     }
 }
 
-// Markdown Textarea Styles
-.markdown-textarea {
-    width: 100%;
-    min-height: 500px;
-    border: none;
-    padding: 2rem;
-    font-family: @mono-font;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: vertical;
-    outline: none;
-    background: @white;
-    color: @text-color;
-    tab-size: 4;
-    
-    &::placeholder {
-        color: @text-light;
-    }
-}
+// Editor container styles handled by markdown.less
 
 // ProseMirror WYSIWYG Styles
 .prosemirror-wysiwyg {
@@ -191,150 +168,7 @@ body {
     color: @text-color;
     min-height: 500px;
     
-    // Headings
-    h1 {
-        .heading-base();
-        font-size: 2em;
-        margin: 1.5rem 0 1rem 0;
-        padding-bottom: 0.3rem;
-        border-bottom: 1px solid @border-color;
-    }
-    
-    h2 {
-        .heading-base();
-        font-size: 1.5em;
-        margin: 1.5rem 0 1rem 0;
-    }
-    
-    h3 {
-        .heading-base();
-        font-size: 1.25em;
-        margin: 1.25rem 0 1rem 0;
-    }
-    
-    h4 {
-        .heading-base();
-        font-size: 1em;
-        margin: 1rem 0 0.75rem 0;
-    }
-    
-    h5 {
-        .heading-base();
-        font-size: 0.875em;
-        margin: 1rem 0 0.75rem 0;
-    }
-    
-    h6 {
-        .heading-base();
-        font-size: 0.85em;
-        margin: 1rem 0 0.75rem 0;
-        color: @text-light;
-    }
-    
-    // Block elements
-    p {
-        margin: 0 0 1rem 0;
-    }
-    
-    blockquote {
-        margin: 1rem 0;
-        padding-left: 1rem;
-        border-left: 4px solid @border-color;
-        color: @text-light;
-        font-style: italic;
-        
-        p {
-            margin-bottom: 0.5rem;
-            
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
-    }
-    
-    // Code
-    code {
-        background: @background;
-        color: @code-pink;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
-        font-family: @mono-font;
-        font-size: 0.875em;
-    }
-    
-    pre {
-        background: @background;
-        border: 1px solid @border-color;
-        border-radius: 6px;
-        padding: 1rem;
-        margin: 1rem 0;
-        overflow-x: auto;
-        font-family: @mono-font;
-        font-size: 0.875em;
-        line-height: 1.45;
-        
-        code {
-            background: none;
-            color: inherit;
-            padding: 0;
-            font-size: inherit;
-        }
-    }
-    
-    // Lists
-    ul, ol {
-        margin: 1rem 0;
-        padding-left: 2rem;
-    }
-    
-    li {
-        margin: 0.25rem 0;
-        
-        p {
-            margin: 0.25rem 0;
-        }
-    }
-    
-    // Links and formatting
-    a {
-        color: @primary-color;
-        text-decoration: none;
-        
-        &:hover {
-            text-decoration: underline;
-        }
-    }
-    
-    strong {
-        font-weight: 600;
-    }
-    
-    em {
-        font-style: italic;
-    }
-    
-    hr {
-        border: none;
-        border-top: 1px solid @border-color;
-        margin: 2rem 0;
-    }
-    
-    img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 6px;
-        .shadow();
-    }
-    
-    // Selection
-    &::selection {
-        background: rgba(52, 152, 219, 0.2);
-    }
-    
-    &::-moz-selection {
-        background: rgba(52, 152, 219, 0.2);
-    }
-    
+    // Focus handling
     &-focused {
         outline: none;
     }
@@ -529,12 +363,7 @@ body {
         min-height: 300px;
     }
     
-    .ProseMirror, 
-    .markdown-textarea {
-        padding: 1rem;
-        font-size: 16px; // Prevent zoom on iOS
-        min-height: 300px;
-    }
+    // Markdown-specific responsive styles handled by markdown.less
     
     .mode-switcher {
         gap: 0.5rem;
