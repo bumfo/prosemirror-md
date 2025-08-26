@@ -64,7 +64,7 @@ export function customBackspace(schema) {
                 // Pattern: <li><p>first</p><p>|second</p></li> where | is cursor
                 const listItemNode = grandparent;
                 const paragraphIndex = $from.index($from.depth - 1);
-                
+
                 if (paragraphIndex > 0) {
                     // This is not the first paragraph in the list item
                     // Try joinBackward to merge with the previous paragraph
@@ -79,7 +79,7 @@ export function customBackspace(schema) {
                 if (ancestor && ancestor.type === schema.nodes.list_item) {
                     if (joinBackward(state, dispatch)) {
                         return true;
-                    }            
+                    }
                 } else {
                     // if (DEBUG) console.log('in list item, trying liftListItem');
                     if (liftListItem(schema.nodes.list_item)(state, dispatch)) {
@@ -127,9 +127,11 @@ export function customBackspace(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom sink list item command
  */
 export function customSinkListItem(schema) {
+    let sinkListCommand = sinkListItem(schema.nodes.list_item);
+
     return (state, dispatch, view) => {
         const { $from } = state.selection;
-        
+
         // Check if we're in a paragraph within a list item
         if ($from.parent.type === schema.nodes.paragraph) {
             const grandparent = $from.node($from.depth - 1);
@@ -149,10 +151,10 @@ export function customSinkListItem(schema) {
                 }
             }
         }
-        
+
         // Use standard sinkListItem behavior for single-paragraph list items
         // or first paragraph of multi-paragraph list items
-        return sinkListItem(schema.nodes.list_item)(state, dispatch, view);
+        return sinkListCommand(state, dispatch, view);
     };
 }
 
@@ -162,9 +164,11 @@ export function customSinkListItem(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom lift list item command
  */
 export function customLiftListItem(schema) {
+    let liftListCommand = liftListItem(schema.nodes.list_item);
+
     return (state, dispatch, view) => {
         const { $from } = state.selection;
-        
+
         // Check if we're in a paragraph within a list item
         if ($from.parent.type === schema.nodes.paragraph) {
             const grandparent = $from.node($from.depth - 1);
@@ -184,9 +188,9 @@ export function customLiftListItem(schema) {
                 }
             }
         }
-        
+
         // Use standard liftListItem behavior for single-paragraph list items
         // or first paragraph of multi-paragraph list items
-        return liftListItem(schema.nodes.list_item)(state, dispatch, view);
+        return liftListCommand(state, dispatch, view);
     };
 }
