@@ -39,8 +39,6 @@ export function customJoinBackward(schema) {
  * @returns {import('../menu/menu.d.ts').CommandFn} Custom backspace command
  */
 export function customBackspace(schema) {
-    let liftListCommand = backspaceListItem(schema.nodes.list_item);
-
     return (state, dispatch, view) => {
         if (!state.selection.empty) {
             return false;
@@ -54,20 +52,28 @@ export function customBackspace(schema) {
             return false;
         }
 
-        const { $from } = state.selection;
+        let { $from, $to } = state.selection;
         const parent = $from.parent;
 
-        // If already a paragraph, try various backspace behaviors
-        if (parent.type === schema.nodes.paragraph) {
-            // if (DEBUG) console.log('already paragraph');
+        if (parent.type !== schema.nodes.paragraph) {
+            // Reset block to paragraph
+            if (dispatch) {
+                const tr = state.tr;
+                tr.setBlockType($from.before(), $from.after(), schema.nodes.paragraph);
+                dispatch(tr);
+            }
 
-            // Check if we're in a list item and handle different scenarios
-            const grandparent = $from.node($from.depth - 1);
-            if (grandparent && grandparent.type === schema.nodes.list_item) {
-                if (DEBUG) console.log('in list item, trying liftListItem');
-                if (liftListCommand(state, dispatch)) {
-                    return true;
-                }
+            return true;
+        }
+        // Else, already a paragraph, try various backspace behaviors            
+
+        let itemType = schema.nodes.list_item;
+        // let { $from, $to } = state.selection;
+        let range = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
+        if (range) {
+            let grandparent = $from.node(range.depth - 1);
+
+            if (grandparent.type === itemType) {// Inside a parent list
 
                 // Check if this is a second (or later) paragraph in a list item
                 // Pattern: <li><p>first</p><p>|second</p></li> where | is cursor
@@ -106,43 +112,39 @@ export function customBackspace(schema) {
                             return true;
                         }
                     }
-                } else {
-                    if (DEBUG) console.log('in list item, trying liftListItem');
-                    if (liftListCommand(state, dispatch)) {
-                        return true;
-                    }
+                }
+
+                if (liftToOuterList(state, dispatch, itemType, range)) {
+                    return true;
+                }
+            } else { // Outer list node
+                if (liftOutOfList(state, dispatch, range)) {
+                    return true;
                 }
             }
+        }
 
-            if (DEBUG) console.log('lift');
-            if (lift(state, dispatch)) {
-                return true;
-            }
-
-            if (DEBUG) console.log('customJoinBackward');
-            if (customJoinBackward(schema)(state, dispatch)) {
-                return true;
-            }
-
-            if (DEBUG) console.log('joinBackward fallback');
-            if (joinBackward(state, dispatch)) {
-                return true;
-            }
-
-            if (DEBUG) console.log('selectNodeBackward');
-            if (selectNodeBackward(state, dispatch)) {
-                return true;
-            }
-
+        if (DEBUG) console.log('lift');
+        if (lift(state, dispatch)) {
             return true;
         }
 
-        // Reset block to paragraph
-        if (dispatch) {
-            const tr = state.tr;
-            tr.setBlockType($from.before(), $from.after(), schema.nodes.paragraph);
-            dispatch(tr);
+        if (DEBUG) console.log('customJoinBackward');
+        if (customJoinBackward(schema)(state, dispatch)) {
+            return true;
         }
+
+        if (DEBUG) console.log('joinBackward fallback');
+        if (joinBackward(state, dispatch)) {
+            return true;
+        }
+
+        if (DEBUG) console.log('selectNodeBackward');
+        if (selectNodeBackward(state, dispatch)) {
+            return true;
+        }
+
+
         return true;
     };
 }
@@ -221,27 +223,8 @@ export function customLiftListItem(schema) {
     };
 }
 
-
-/**
- Create a command to lift the list item around the selection up into
- a wrapping list.
- */
-function backspaceListItem(itemType) {
-    return function (state, dispatch) {
-        let { $from, $to } = state.selection;
-        let range = $from.blockRange($to, node => node.childCount > 0 && node.firstChild.type === itemType);
-        if (!range)
-            return false;
-        if (!dispatch)
-            return true;
-        if ($from.node(range.depth - 1).type === itemType) // Inside a parent list
-            return liftToOuterList(state, dispatch, itemType, range);
-        else // Outer list node
-            return liftOutOfList(state, dispatch, range);
-    };
-}
-
 function liftToOuterList(state, dispatch, itemType, range) {
+    console.log('liftToOuterList');
     let tr = state.tr, end = range.end, endOfList = range.$to.end(range.depth);
     if (end < endOfList) {
         // There are siblings after the lifted items, which must become
@@ -256,11 +239,12 @@ function liftToOuterList(state, dispatch, itemType, range) {
     let $after = tr.doc.resolve(tr.mapping.map(end, -1) - 1);
     if (canJoin(tr.doc, $after.pos) && $after.nodeBefore.type === $after.nodeAfter.type)
         tr.join($after.pos);
-    dispatch(tr.scrollIntoView());
+    if (dispatch) dispatch(tr.scrollIntoView());
     return true;
 }
 
 function liftOutOfList(state, dispatch, range) {
+    console.log('liftOutOfList');
     let tr = state.tr, list = range.parent;
     // Merge the list items into a single big item
     for (let pos = range.end, i = range.endIndex - 1, e = range.startIndex; i > e; i--) {
@@ -280,6 +264,6 @@ function liftOutOfList(state, dispatch, range) {
     // this is the end, it is overwritten to its end.
     tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
         .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
-    dispatch(tr.scrollIntoView());
+    if (dispatch) dispatch(tr.scrollIntoView());
     return true;
 }
