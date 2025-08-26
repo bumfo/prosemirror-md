@@ -2,9 +2,25 @@
 
 ## Project Description
 
-This is a modern WYSIWYG markdown editor built with ProseMirror that provides seamless bidirectional conversion between rich text editing and raw markdown. The project demonstrates ProseMirror's powerful document model and state management system for building sophisticated text editors.
+This is a modern WYSIWYG markdown editor built with ProseMirror that provides seamless bidirectional conversion between rich text editing and raw markdown. The project demonstrates advanced ProseMirror implementation patterns including custom menu systems, enhanced commands, and dual-mode editing.
 
-**Repository Structure**: This project is part of a larger repository (`editor-md`) that contains the main editor implementation plus reference copies of original ProseMirror packages:
+## About ProseMirror
+
+**ProseMirror** is a functional, immutable rich text editing framework that gives developers full control over document structure and editing behavior through schemas, commands, and plugins.
+
+### Core Concepts
+
+**Document Model**: ProseMirror uses an immutable tree-based document model where **Nodes** represent structure (paragraphs, headings, lists), **Marks** represent formatting (bold, italic, links), **Schema** defines valid structure rules, and **Transactions** describe document changes.
+
+**State Management**: **EditorState** contains the complete editor state (document, selection, plugins), **Transactions** update state immutably, **Plugins** extend functionality, and **Commands** create and dispatch transactions.
+
+**View System**: **EditorView** renders the document and handles user interaction, **Node Views** allow custom rendering, and **Decorations** add visual elements without changing the document.
+
+**For complete ProseMirror fundamentals**, see the [ProseMirror Library Guide](../CLAUDE.md) which covers design philosophy and development patterns.
+
+## Working Directory Structure
+
+This working directory contains the main editor implementation plus reference copies of original ProseMirror source code:
 - `prosemirror-md/` - **Main editor implementation** (this package)
 - `prosemirror-menu/`, `prosemirror-commands/`, `prosemirror-example-setup/` - Reference implementations of original ProseMirror packages (for study/reference only)
 
@@ -46,25 +62,6 @@ This is a modern WYSIWYG markdown editor built with ProseMirror that provides se
 - **Custom Menu System** - Reusable menu components with optimized state management
 - **Enhanced Commands** - Custom backspace behavior and improved text editing
 
-## ProseMirror Concepts
-
-### Document Model
-ProseMirror uses an immutable tree-based document model:
-- **Nodes** represent document structure (paragraphs, headings, lists)
-- **Marks** represent inline formatting (bold, italic, links)
-- **Schema** defines valid document structure and content rules
-- **Transactions** describe document changes in a persistent way
-
-### State Management
-- **EditorState** contains the complete editor state (document, selection, plugins)
-- **Transactions** are used to update state immutably
-- **Plugins** extend functionality and can maintain their own state
-- **Commands** are functions that create and dispatch transactions
-
-### View System
-- **EditorView** renders the document and handles user interaction
-- **Node Views** allow custom rendering of specific node types
-- **Decorations** can add visual elements without changing the document
 
 ## Critical Setup Requirements
 
@@ -190,76 +187,23 @@ The WYSIWYG editor includes history, drop cursor, gap cursor, custom menu system
 
 For detailed implementation information, see [src/editor/CLAUDE.md](src/editor/CLAUDE.md).
 
-## Extension Development Guidelines
+## Project-Specific Extensions
 
-### Creating Custom Plugins
+This editor provides several extension points for customization:
 
-```js
-import { Plugin, PluginKey } from 'prosemirror-state';
+### Custom Menu Items
+Extend the toolbar by adding new MenuItem instances to the menu configuration in [src/editor/menu.js](src/editor/menu.js). Use the existing icon system and command patterns.
 
-const myPlugin = new Plugin({
-    key: new PluginKey('myPlugin'),
-    
-    // Plugin state
-    state: {
-        init: () => ({}),
-        apply: (tr, value) => value
-    },
-    
-    // DOM properties
-    props: {
-        attributes: { class: 'my-plugin' },
-        handleKeyDown: (view, event) => { /* handle keys */ }
-    }
-});
-```
+### Schema Extensions  
+Extend the markdown schema in [src/markdown/schema.js](src/markdown/schema.js) to support additional markdown elements. Update parser and serializer accordingly.
 
-### Custom Node Views
+### Custom Commands
+Add new editing commands in [src/commands/](src/commands/) following the established patterns for state checking and transaction application.
 
-```js
-class CustomNodeView {
-    constructor(node, view, getPos) {
-        this.node = node;
-        this.view = view;
-        this.getPos = getPos;
-        
-        // Create DOM representation
-        this.dom = document.createElement('div');
-        this.dom.className = 'custom-node';
-        
-        // Make contenteditable if needed
-        this.contentDOM = this.dom;
-    }
-    
-    update(node) {
-        if (node.type != this.node.type) return false;
-        this.node = node;
-        return true;
-    }
-    
-    destroy() {
-        // Cleanup
-    }
-}
-```
+### Input Rules
+Extend smart typing shortcuts in [src/editor/inputrules.js](src/editor/inputrules.js) to support additional markdown patterns.
 
-### Schema Extensions
-
-```js
-const myNodes = {
-    custom_block: {
-        content: "text*",
-        group: "block",
-        parseDOM: [{ tag: "div.custom" }],
-        toDOM: () => ["div", { class: "custom" }, 0]
-    }
-};
-
-const extendedSchema = new Schema({
-    nodes: markdownSchema.spec.nodes.append(myNodes),
-    marks: markdownSchema.spec.marks
-});
-```
+For general ProseMirror extension patterns, see the [ProseMirror Library Guide](../CLAUDE.md).
 
 ## Performance Considerations
 
@@ -414,44 +358,6 @@ view.setProps({
 - Monitor for memory leaks during view switching
 - Check bundle size with `npm run build` and analyze chunks
 
-## Extension Points
-
-### Custom Commands
-```js
-import { toggleMark, setBlockType } from 'prosemirror-commands';
-
-const myCommands = {
-    toggleBold: toggleMark(schema.marks.strong),
-    makeHeading: setBlockType(schema.nodes.heading, { level: 1 })
-};
-```
-
-### Input Rules
-```js
-import { inputRules, wrappingInputRule } from 'prosemirror-inputrules';
-
-const blockquoteRule = wrappingInputRule(
-    /^\s*>\s$/,
-    schema.nodes.blockquote
-);
-
-const myInputRules = inputRules({ rules: [blockquoteRule] });
-```
-
-### Menu Integration
-```js
-import { menuBar, MenuItem } from 'prosemirror-menu';
-
-const menu = menuBar({
-    content: [
-        [new MenuItem({
-            title: "Strong",
-            icon: strongIcon,
-            cmd: toggleMark(schema.marks.strong)
-        })]
-    ]
-});
-```
 
 ## Menu System
 
