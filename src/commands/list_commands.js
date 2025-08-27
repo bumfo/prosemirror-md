@@ -148,9 +148,7 @@ export function customLiftListItem(schema) {
     });
 }
 
-function isListFirst({ selection }, itemType, paragraphType) {
-    const { $from } = selection;
-
+function isListFirst({ selection: { $from } }, itemType, paragraphType) {
     // Check if we're in a paragraph within a list item
     if ($from.parent.type === paragraphType) {
         const grandparent = $from.node($from.depth - 1);
