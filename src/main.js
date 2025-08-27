@@ -106,7 +106,7 @@ class EditorManager {
     }
     
     setupViewListeners() {
-        const checkboxes = document.querySelectorAll('input[name=\"view\"]');
+        const checkboxes = document.querySelectorAll('input[name="view"]');
         
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', () => {
@@ -147,7 +147,7 @@ class EditorManager {
         // Prevent deactivating all views
         if (this.activeViews.size <= 1) {
             // Re-check the checkbox
-            const checkbox = document.querySelector(`input[data-view=\"${viewType}\"]`);
+            const checkbox = document.querySelector(`input[data-view="${viewType}"]`);
             if (checkbox) checkbox.checked = true;
             return;
         }

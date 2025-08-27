@@ -48,8 +48,8 @@ export function customJoinBackward(state, dispatch, view) {
  * @returns {Command} Custom backspace command
  */
 export function customBackspace(schema) {
-    const paragraphType = schema.nodes.paragraph
-    const itemType = schema.nodes.list_item
+    const paragraphType = schema.nodes.paragraph;
+    const itemType = schema.nodes.list_item;
 
     /**
      * @param {EditorState} state

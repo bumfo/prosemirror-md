@@ -8,7 +8,6 @@ import { MenuView } from './menu.js';
 
 /**
  * Create the menu bar plugin
- * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
  * @param {Array<Array<import('./menu.js').MenuItem>>} menuItems - Grouped menu items
  * @returns {import('prosemirror-state').Plugin} Menu bar plugin
  */
