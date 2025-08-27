@@ -24,10 +24,10 @@ import {
 /**
  * @typedef {import('prosemirror-view').EditorView} EditorView
  * @typedef {import('prosemirror-state').EditorState} EditorState
+ * @typedef {import('prosemirror-state').Command} Command
  * @typedef {import('../menu/menu.d.ts').MenuItem} MenuItem
  * @typedef {import('../menu/menu.d.ts').IconSpec} IconSpec
  * @typedef {import('../menu/menu.d.ts').MenuItemSpec} MenuItemSpec
- * @typedef {import('../menu/menu.d.ts').CommandFn} CommandFn
  * @typedef {import('../menu/menu.d.ts').ActiveFn} ActiveFn
  * @typedef {import('../menu/menu.d.ts').EnableFn} EnableFn
  * @typedef {import('../menu/menu.d.ts').StateContext} StateContext
@@ -37,7 +37,7 @@ import {
  * Create menu item with keyboard shortcut (legacy helper for backward compatibility)
  * @param {IconSpec|string} icon - Icon specification or HTML string
  * @param {string} title - Item title
- * @param {CommandFn} command - Command function
+ * @param {Command} command - Command function
  * @param {ActiveFn|null} [isActive] - Active state function
  * @param {string|null} [shortcut] - Keyboard shortcut
  * @param {EnableFn|null} [isEnabled] - Enable state function
@@ -77,7 +77,7 @@ export function menuItem(icon, title, command, isActive = null, shortcut = null,
 
 /**
  * Create menu item for custom commands with optional enable/active functions
- * @param {CommandFn} command - Command function to execute
+ * @param {Command} command - Command function to execute
  * @param {Partial<MenuItemSpec>} options - Menu item options (excluding run)
  * @returns {MenuItem} Menu item instance
  */
@@ -98,7 +98,7 @@ function cmdItem(command, options) {
 /**
  * Helper function to prompt for link URL
  * @param {import('prosemirror-model').MarkType} markType - Link mark type
- * @returns {import('../menu/menu.d.ts').CommandFn} Link command function
+ * @returns {Command} Link command function
  */
 function linkCommand(markType) {
     return (state, dispatch, view) => {
@@ -253,7 +253,7 @@ export function createMenuItems(schema) {
 /**
  * Image insertion command
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Image insertion command
+ * @returns {Command} Image insertion command
  */
 function insertImageCommand(schema) {
     return (state, dispatch) => {
@@ -276,7 +276,7 @@ function insertImageCommand(schema) {
 /**
  * Hard break command (Shift+Enter)
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Hard break command
+ * @returns {Command} Hard break command
  */
 function insertHardBreakCommand(schema) {
     return (state, dispatch) => {
@@ -294,7 +294,7 @@ function insertHardBreakCommand(schema) {
 /**
  * Clear formatting command
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Clear formatting command
+ * @returns {Command} Clear formatting command
  */
 function clearFormattingCommand(schema) {
     return (state, dispatch) => {
@@ -321,7 +321,7 @@ function clearFormattingCommand(schema) {
 /**
  * Insert table command (basic 3x3 table)
  * @param {import('prosemirror-model').Schema} schema - ProseMirror schema
- * @returns {import('../menu/menu.d.ts').CommandFn} Table insertion command
+ * @returns {Command} Table insertion command
  */
 function insertTableCommand(schema) {
     return (state, dispatch) => {

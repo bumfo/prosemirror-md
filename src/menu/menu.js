@@ -10,10 +10,10 @@ import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 /**
  * @typedef {import('prosemirror-view').EditorView} EditorView
  * @typedef {import('prosemirror-state').EditorState} EditorState
+ * @typedef {import('prosemirror-state').Command} Command
  * @typedef {import('./menu.d.ts').MenuItem} MenuItem
  * @typedef {import('./menu.d.ts').IconSpec} IconSpec
  * @typedef {import('./menu.d.ts').MenuItemSpec} MenuItemSpec
- * @typedef {import('./menu.d.ts').CommandFn} CommandFn
  * @typedef {import('./menu.d.ts').ActiveFn} ActiveFn
  * @typedef {import('./menu.d.ts').EnableFn} EnableFn
  * @typedef {import('./menu.d.ts').StateContext} StateContext
@@ -333,7 +333,7 @@ export class MenuView {
 /**
  * Custom toggle mark command that aligns with our active state logic
  * @param {import('prosemirror-model').MarkType} markType - Mark type to toggle
- * @returns {import('./menu.d.ts').CommandFn} Toggle mark command
+ * @returns {Command} Toggle mark command
  */
 export function customToggleMark(markType) {
     return (state, dispatch, view) => {

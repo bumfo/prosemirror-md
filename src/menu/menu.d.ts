@@ -1,4 +1,4 @@
-import { EditorState } from 'prosemirror-state';
+import { EditorState, Command } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { Node, Mark, NodeType, MarkType } from 'prosemirror-model';
 import { Schema } from 'prosemirror-model';
@@ -62,11 +62,6 @@ export interface IconSpec {
 }
 
 /**
- * Command function type for menu items
- */
-export type CommandFn = (state: EditorState, dispatch?: (tr: any) => void, view?: EditorView, event?: Event) => boolean;
-
-/**
  * Selection function for visibility checking
  */
 export type SelectFn = (state: EditorState, context: StateContext) => boolean;
@@ -91,7 +86,7 @@ export type TitleFn = (state: EditorState) => string;
  */
 export interface MenuItemSpec {
     /** Command to execute when clicked */
-    run: CommandFn;
+    run: Command;
     /** Function to check if item should be enabled */
     enable?: EnableFn;
     /** Function to check if item should show as active */
@@ -176,7 +171,7 @@ export class MenuView {
 export function menuItem(
     icon: IconSpec | string,
     title: string,
-    command: CommandFn,
+    command: Command,
     isActive?: ActiveFn | null,
     shortcut?: string | null,
     isEnabled?: EnableFn | null
@@ -185,7 +180,7 @@ export function menuItem(
 /**
  * Custom toggle mark command that aligns with active state logic
  */
-export function customToggleMark(markType: MarkType): CommandFn;
+export function customToggleMark(markType: MarkType): Command;
 
 /**
  * Context-aware helper function to check if a mark is active

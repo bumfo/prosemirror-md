@@ -4,10 +4,10 @@ import { backspaceList } from './list_commands.js';
 
 /**
  * @typedef {import('prosemirror-state').EditorState} EditorState
+ * @typedef {import('prosemirror-state').Command} Command
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
- * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
  */
 
 /**
