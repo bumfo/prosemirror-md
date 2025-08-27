@@ -23,21 +23,23 @@ const DEBUG = false;
  * If not, try to move the selected block closer to the next one in
  * the document structure by lifting it out of its parent or moving it
  * into a parent of the previous block.
- * @returns {Command}
+ *
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {any} view
+ * @returns {boolean}
  */
-export function customJoinBackward(schema) {
-    return (state, dispatch, view) => {
-        let $cursor = atBlockStart(state, view);
-        if (!$cursor) return false;
+export function customJoinBackward(state, dispatch, view) {
+    let $cursor = atBlockStart(state, view);
+    if (!$cursor) return false;
 
-        let $cut = findCutBefore($cursor);
-        if (!$cut) {
-            return false; // fallback to default impl
-        }
+    let $cut = findCutBefore($cursor);
+    if (!$cut) {
+        return false; // fallback to default impl
+    }
 
-        // Apply the joining algorithm
-        return customDeleteBarrier(state, $cut, dispatch, -1);
-    };
+    // Apply the joining algorithm
+    return customDeleteBarrier(state, $cut, dispatch);
 }
 
 /**
@@ -46,7 +48,6 @@ export function customJoinBackward(schema) {
  * @returns {Command} Custom backspace command
  */
 export function customBackspace(schema) {
-    const customJoin = customJoinBackward(schema)
     const paragraphType = schema.nodes.paragraph
     const itemType = schema.nodes.list_item
 
@@ -94,7 +95,7 @@ export function customBackspace(schema) {
         }
 
         if (DEBUG) console.log('customJoinBackward');
-        if (customJoin(state, dispatch)) {
+        if (customJoinBackward(state, dispatch, view)) {
             return true;
         }
 

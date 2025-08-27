@@ -75,13 +75,13 @@ function doJoin(tr, $cut) {
     return tr;
 }
 
-export function customDeleteBarrier(state, $cut, dispatch, dir) {
+export function customDeleteBarrier(state, $cut, dispatch) {
     // if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
     if (!isolated) {
-        let before = $cut.nodeBefore, after = $cut.nodeAfter, index = $cut.index();
+        let before = $cut.nodeBefore, after = $cut.nodeAfter;
         if (before && after && before.type.compatibleContent(after.type)) {
             // if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
             return false;

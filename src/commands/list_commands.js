@@ -25,7 +25,7 @@ const DEBUG = false;
  * @returns {boolean}
  */
 export function backspaceList(state, dispatch, itemType) {
-    let { $from, $to, from } = state.selection;
+    let { $from, $to } = state.selection;
 
     let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
     let listRange = $from.blockRange($to, listPredicate);
