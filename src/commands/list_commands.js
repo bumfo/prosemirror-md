@@ -54,16 +54,7 @@ function funcToCommand(func, scroll = true) {
  * @param {NodeType} itemType
  * @returns {boolean}
  */
-export const backspaceList = funcToCommand(backspaceListFunc)
-
-/**
- * Handle backspace behavior within lists
- * @param {Transform} tr
- * @param {Selection} selection
- * @param {NodeType} itemType
- * @returns {boolean}
- */
-function backspaceListFunc({ tr, selection }, itemType) {
+export const backspaceList = funcToCommand(({ tr, selection }, itemType) => {
     let { $from, $to } = selection;
 
     let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
@@ -94,7 +85,7 @@ function backspaceListFunc({ tr, selection }, itemType) {
     }
 
     return false;
-}
+})
 
 /**
  * @param {Transform} tr
