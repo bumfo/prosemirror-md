@@ -1,5 +1,6 @@
 /**
  * @typedef {import('./types.d.ts').Command} Command
+ * @typedef {import('./types.d.ts').Func} Func
  */
 
 /**
@@ -7,4 +8,34 @@
  */
 export function cmd(cmd) {
     return cmd
+}
+
+/**
+ * @param {Func} func
+ * @param {boolean} scroll
+ * @returns {Command | ((state: EditorState, dispatch?: (tr: any) => void, ...args) => boolean)}
+ */
+export function funcToCommand(func, scroll = true) {
+    /**
+     * @param {EditorState} state
+     * @param {(tr: any) => void} dispatch
+     * @param args
+     * @returns {boolean}
+     */
+    function command(state, dispatch, ...args) {
+        let tr = state.tr;
+        if (!func(tr, ...args)) {
+            return false;
+        }
+
+        if (dispatch) {
+            if (scroll) {
+                tr.scrollIntoView();
+            }
+            dispatch(tr);
+        }
+        return true;
+    }
+
+    return command;
 }

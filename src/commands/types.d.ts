@@ -1,9 +1,6 @@
 import { Transaction } from 'prosemirror-state';
 
-export type Func = (
-    tr: Transaction,
-    ...args: any[]
-) => boolean;
+export type Func = (tr: Transaction, ...args: any[]) => boolean;
 
 export type { Command } from "prosemirror-state";
 export type { EditorState, Transaction } from 'prosemirror-state';

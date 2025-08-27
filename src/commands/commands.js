@@ -1,7 +1,7 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
 import { atBlockStart, customDeleteBarrier, findCutBefore } from './transforms.js';
 import { backspaceList } from './list_commands.js';
-import { cmd } from './index.js';
+import { cmd } from './util.js';
 
 /**
  * @typedef {import('prosemirror-model').Schema} Schema
@@ -50,6 +50,7 @@ export function customJoinBackward(state, dispatch, view) {
 export function customBackspace(schema) {
     const paragraphType = schema.nodes.paragraph;
     const itemType = schema.nodes.list_item;
+    const backspaceListCommand = backspaceList(itemType);
 
     return cmd((state, dispatch, view) => {
         if (!state.selection.empty) {
@@ -79,7 +80,7 @@ export function customBackspace(schema) {
         }
         // Else, already a paragraph, try various backspace behaviors            
 
-        if (backspaceList(state, dispatch, itemType)) {
+        if (backspaceListCommand(state, dispatch)) {
             return true;
         }
 
