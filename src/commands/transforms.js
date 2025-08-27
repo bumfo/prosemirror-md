@@ -115,26 +115,6 @@ function deleteBarrierFunc(tr, $cut) {
 }
 
 /**
- * Command version of deleteBarrier for backward compatibility
- * 
- * @param {EditorState} state - Editor state
- * @param {ResolvedPos} $cut - Position of the barrier to delete
- * @param {(tr: any) => void} dispatch - Dispatch function
- * @returns {boolean} True if barrier was successfully deleted
- */
-export function customDeleteBarrier(state, $cut, dispatch) {
-    let tr = state.tr;
-    if (!deleteBarrierFunc(tr, $cut)) {
-        return false;
-    }
-    
-    if (dispatch) {
-        dispatch(tr.scrollIntoView());
-    }
-    return true;
-}
-
-/**
  * Export the func version for use with funcToCommand
  */
 export { deleteBarrierFunc };
