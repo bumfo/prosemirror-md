@@ -116,26 +116,8 @@ export function customSinkListItem(schema) {
     let sinkListCommand = sinkListItem(itemType);
 
     return (state, dispatch, view) => {
-        const { $from } = state.selection;
-
-        // Check if we're in a paragraph within a list item
-        if ($from.parent.type === schema.nodes.paragraph) {
-            const grandparent = $from.node($from.depth - 1);
-            if (grandparent && grandparent.type === itemType) {
-                // Check if this list item contains multiple paragraphs
-                const listItemNode = grandparent;
-                if (listItemNode.childCount > 1) {
-                    // Check if cursor is at the first paragraph
-                    const paragraphIndex = $from.index($from.depth - 1);
-                    if (paragraphIndex > 0) {
-                        // We're in a second+ paragraph of multi-paragraph list item
-                        // Skip sinking to avoid breaking structure
-                        if (DEBUG) console.log('multi-paragraph list item (not first paragraph), skipping sink');
-                        return false;
-                    }
-                    // If we're in the first paragraph, continue with normal sinking behavior
-                }
-            }
+        if (!isListFirst(state, itemType, schema.nodes.paragraph)) {
+            return false;
         }
 
         // Use standard sinkListItem behavior for single-paragraph list items
@@ -155,32 +137,39 @@ export function customLiftListItem(schema) {
     let liftListCommand = liftListItem(itemType);
 
     return (state, dispatch, view) => {
-        const { $from } = state.selection;
-
-        // Check if we're in a paragraph within a list item
-        if ($from.parent.type === schema.nodes.paragraph) {
-            const grandparent = $from.node($from.depth - 1);
-            if (grandparent && grandparent.type === itemType) {
-                // Check if this list item contains multiple paragraphs
-                const listItemNode = grandparent;
-                if (listItemNode.childCount > 1) {
-                    // Check if cursor is at the first paragraph
-                    const paragraphIndex = $from.index($from.depth - 1);
-                    if (paragraphIndex > 0) {
-                        // We're in a second+ paragraph of multi-paragraph list item
-                        // Skip lifting to avoid breaking structure
-                        if (DEBUG) console.log('multi-paragraph list item (not first paragraph), skipping lift');
-                        return false;
-                    }
-                    // If we're in the first paragraph, continue with normal lifting behavior
-                }
-            }
+        if (!isListFirst(state, itemType, schema.nodes.paragraph)) {
+            return false;
         }
 
         // Use standard liftListItem behavior for single-paragraph list items
         // or first paragraph of multi-paragraph list items
         return liftListCommand(state, dispatch, view);
     };
+}
+
+function isListFirst({ selection }, itemType, paragraphType) {
+    const { $from } = selection;
+
+    // Check if we're in a paragraph within a list item
+    if ($from.parent.type === paragraphType) {
+        const grandparent = $from.node($from.depth - 1);
+        if (grandparent && grandparent.type === itemType) {
+            // Check if this list item contains multiple paragraphs
+            const listItemNode = grandparent;
+            if (listItemNode.childCount > 1) {
+                // Check if cursor is at the first paragraph
+                const paragraphIndex = $from.index($from.depth - 1);
+                if (paragraphIndex > 0) {
+                    // We're in a second+ paragraph of multi-paragraph list item
+                    // Skip lifting to avoid breaking structure
+                    if (DEBUG) console.log('multi-paragraph list item (not first paragraph), skipping lift');
+                    return false;
+                }
+                // If we're in the first paragraph, continue with normal lifting behavior
+            }
+        }
+    }
+    return true;
 }
 
 /**
