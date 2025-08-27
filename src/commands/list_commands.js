@@ -10,7 +10,7 @@
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { canJoin, canSplit, liftTarget, ReplaceAroundStep } from 'prosemirror-transform';
 import { Fragment, NodeRange, Slice } from 'prosemirror-model';
-import { cmd, funcToCommand } from './util.js';
+import { cmd, funcToCommand, mapping } from './util.js';
 
 /**
  * @typedef {import('prosemirror-model').Schema} Schema
@@ -182,21 +182,6 @@ function isFirstParagraphInListItem(state, itemType, paragraphType) {
     }
 
     return true; // In first paragraph, allow operation
-}
-
-/**
- * Get position mapping from transaction
- *
- * Helper to get mapping from a specific step index in the transaction.
- * Used for tracking position changes through multiple transformation steps.
- *
- * @param {Transform} tr - The transaction/transform
- * @param {number} [steps=0] - Number of steps to slice from (0 = all steps)
- * @returns {import('prosemirror-transform').Mapping} Position mapping
- */
-function mapping(tr, steps = 0) {
-    if (steps === 0) return tr.mapping;
-    return tr.mapping.slice(steps);
 }
 
 // ============================================================================
