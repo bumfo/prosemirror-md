@@ -95,7 +95,7 @@ function doJoinFunc(tr, $cut) {
  * @param {ResolvedPos} $cut - Position of the barrier to delete
  * @returns {boolean} True if barrier was successfully deleted
  */
-function deleteBarrierFunc(tr, $cut) {
+export function deleteBarrierFunc(tr, $cut) {
     // if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;
@@ -114,7 +114,3 @@ function deleteBarrierFunc(tr, $cut) {
     return doJoinFunc(tr, $cut);
 }
 
-/**
- * Export the func version for use with funcToCommand
- */
-export { deleteBarrierFunc };
