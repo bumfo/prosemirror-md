@@ -1,5 +1,5 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
-import { atBlockStart, customDeleteBarrier, findCutBefore } from './transforms.js';
+import { atBlockStart, findCutBefore, deleteBarrierFunc } from './transforms.js';
 import { backspaceList } from './list_commands.js';
 import { cmd } from './util.js';
 
@@ -8,6 +8,7 @@ import { cmd } from './util.js';
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
  * @typedef {import('./types.d.ts').Command} Command
+ * @typedef {import('./types.d.ts').EditorState} EditorState
  */
 
 /**
@@ -16,20 +17,22 @@ import { cmd } from './util.js';
 const DEBUG = false;
 
 /**
- * Exact copy of joinBackward from prosemirror-commands
+ * Custom join backward command
+ * 
  * If the selection is empty and at the start of a textblock, try to
  * reduce the distance between that block and the one before it—if
  * there's a block directly before it that can be joined, join them.
  * If not, try to move the selected block closer to the next one in
  * the document structure by lifting it out of its parent or moving it
  * into a parent of the previous block.
- *
- * @param {EditorState} state
- * @param {(tr: any) => void} dispatch
- * @param {any} view
- * @returns {boolean}
+ * 
+ * @param {EditorState} state - Editor state
+ * @param {(tr: any) => void} dispatch - Dispatch function
+ * @param {any} view - Editor view
+ * @returns {boolean} True if joining was successful
  */
 export function customJoinBackward(state, dispatch, view) {
+    // Resolve positions at command level
     let $cursor = atBlockStart(state, view);
     if (!$cursor) return false;
 
@@ -38,8 +41,16 @@ export function customJoinBackward(state, dispatch, view) {
         return false; // fallback to default impl
     }
 
-    // Apply the joining algorithm
-    return customDeleteBarrier(state, $cut, dispatch);
+    // Apply the joining algorithm directly using deleteBarrierFunc
+    let tr = state.tr;
+    if (!deleteBarrierFunc(tr, $cut)) {
+        return false;
+    }
+    
+    if (dispatch) {
+        dispatch(tr.scrollIntoView());
+    }
+    return true;
 }
 
 /**

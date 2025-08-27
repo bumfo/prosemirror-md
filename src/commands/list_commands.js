@@ -16,10 +16,10 @@ import { cmd, funcToCommand } from './util.js';
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
+ * @typedef {import('prosemirror-transform').Transform} Transform
  * @typedef {import('./types.d.ts').Transaction} Transaction
  * @typedef {import('./types.d.ts').Command} Command
  * @typedef {import('./types.d.ts').EditorState} EditorState
- * @typedef {import('prosemirror-transform').Transform} Transform
  */
 
 // ============================================================================

@@ -2,6 +2,12 @@ import { canJoin, ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 import { Fragment, Slice } from 'prosemirror-model';
 
 /**
+ * @typedef {import('prosemirror-transform').Transform} Transform
+ * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
+ * @typedef {import('./types.d.ts').EditorState} EditorState
+ */
+
+/**
  * Debug flag for command logging
  */
 const DEBUG = false;
@@ -22,7 +28,14 @@ export function findCutBefore($pos) {
     return null;
 }
 
-function doJoin(tr, $cut) {
+/**
+ * Core join operation that works directly on transactions
+ * 
+ * @param {Transform} tr - The transaction to modify
+ * @param {ResolvedPos} $cut - Position where joining should occur
+ * @returns {boolean} True if join was successful
+ */
+function doJoinFunc(tr, $cut) {
     if (DEBUG) console.log('doJoin', tr.steps.length, $cut);
 
     const extraMerge = true;
@@ -31,10 +44,10 @@ function doJoin(tr, $cut) {
 
     let match = before.contentMatchAt(before.childCount);
     let conn = match.findWrapping(after.type);
-    if (!conn) return null;
+    if (!conn) return false;
     // if (DEBUG) console.log('match:', match.next.map(x => x.type.name), '.matchType(', conn[0]?.name, '||', after.type.name, ')');
 
-    if (!match.matchType(conn[0] || after.type).validEnd) return null;
+    if (!match.matchType(conn[0] || after.type).validEnd) return false;
 
     if (DEBUG) console.log('wrap', conn.map(x => x.name));
 
@@ -64,7 +77,7 @@ function doJoin(tr, $cut) {
         } else {
             let $pos = findCutBefore(tr.doc.resolve(end));
             if ($pos) {
-                doJoin(tr, $pos);
+                doJoinFunc(tr, $pos);
             }
         }
         posAfter = tr.mapping.slice(steps).map(posAfter);
@@ -72,16 +85,23 @@ function doJoin(tr, $cut) {
     let $joinAt = tr.doc.resolve(posAfter);
     if ($joinAt.nodeAfter && $joinAt.nodeAfter.type === before.type &&
         canJoin(tr.doc, $joinAt.pos)) tr.join($joinAt.pos);
-    return tr;
+    return true;
 }
 
-export function customDeleteBarrier(state, $cut, dispatch) {
+/**
+ * Delete barrier function that works directly on transactions
+ * 
+ * @param {Transform} tr - The transaction to modify
+ * @param {ResolvedPos} $cut - Position of the barrier to delete
+ * @returns {boolean} True if barrier was successfully deleted
+ */
+function deleteBarrierFunc(tr, $cut) {
     // if (DEBUG) console.log('deleteBarrier', $cut, $cut.nodeBefore?.toString(), $cut.nodeAfter?.toString(), $cut.toString());
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
+    
     if (!isolated) {
-        let before = $cut.nodeBefore, after = $cut.nodeAfter;
         if (before && after && before.type.compatibleContent(after.type)) {
             // if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
             return false;
@@ -90,12 +110,31 @@ export function customDeleteBarrier(state, $cut, dispatch) {
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
     if (!canDelAfter) return false;
-    let tr = doJoin(state.tr, $cut);
-
-    if (dispatch && tr !== null) {
-        dispatch(tr.scrollIntoView());
-        return true;
-    }
-
-    return false;
+    
+    return doJoinFunc(tr, $cut);
 }
+
+/**
+ * Command version of deleteBarrier for backward compatibility
+ * 
+ * @param {EditorState} state - Editor state
+ * @param {ResolvedPos} $cut - Position of the barrier to delete
+ * @param {(tr: any) => void} dispatch - Dispatch function
+ * @returns {boolean} True if barrier was successfully deleted
+ */
+export function customDeleteBarrier(state, $cut, dispatch) {
+    let tr = state.tr;
+    if (!deleteBarrierFunc(tr, $cut)) {
+        return false;
+    }
+    
+    if (dispatch) {
+        dispatch(tr.scrollIntoView());
+    }
+    return true;
+}
+
+/**
+ * Export the func version for use with funcToCommand
+ */
+export { deleteBarrierFunc };
