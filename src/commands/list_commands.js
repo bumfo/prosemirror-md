@@ -2,15 +2,14 @@ import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
 import { ReplaceAroundStep, liftTarget, canJoin } from 'prosemirror-transform';
 import { NodeRange, Fragment, Slice } from 'prosemirror-model';
 import { Transform, canSplit } from 'prosemirror-transform';
+import { Selection, EditorState } from 'prosemirror-state';
 
 /**
- * @typedef {import('prosemirror-state').EditorState} EditorState
- * @typedef {import('prosemirror-state').Selection} Selection
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
  * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
- * @typedef {(tr: Transform, ...args) => boolean} Func
+ * @typedef {({tr: Transform, selection: Selection?}, ...args) => boolean} Func
  */
 
 /**
@@ -57,9 +56,8 @@ function funcToCommand(func, scroll = true) {
      * @returns {boolean}
      */
     function command(state, dispatch, ...args) {
-        let tr = state.tr;
-
-        if (!func(tr, ...args)) {
+        let { tr, selection } = state;
+        if (!func({ tr, selection }, ...args)) {
             return false;
         }
 
@@ -82,7 +80,7 @@ function funcToCommand(func, scroll = true) {
  * @param {NodeType} itemType
  * @returns {boolean}
  */
-function backspaceListFunc(tr, selection, itemType) {
+function backspaceListFunc({ tr, selection }, itemType) {
     let { $from, $to } = selection;
 
     let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
@@ -96,7 +94,6 @@ function backspaceListFunc(tr, selection, itemType) {
             if (DEBUG) console.log('second+ paragraph in list item, split anf lift');
 
             let pos = $from.before($from.depth);
-            let tr = state.tr;
             if (splitListFunc(tr, pos)) {
                 let $pos = tr.doc.resolve(tr.mapping.map(pos));
                 if (liftOutOfListFunc(tr, $pos.blockRange($pos, listPredicate))) {
@@ -109,7 +106,7 @@ function backspaceListFunc(tr, selection, itemType) {
             return true;
         }
 
-        if (liftOutOfListFunc(tr, listRange)) {
+        if (liftOutOfListFunc({ tr }, listRange)) {
             return true;
         }
     }
@@ -122,7 +119,7 @@ function backspaceListFunc(tr, selection, itemType) {
  * @param {number} pos
  * @returns {boolean}
  */
-function splitListFunc(tr, pos) {
+function splitListFunc({ tr }, pos) {
     let $pos = tr.doc.resolve(pos);
 
     let nextType = pos === $pos.end() ? $pos.parent.contentMatchAt(0).defaultType : null;
@@ -219,7 +216,7 @@ export function customLiftListItem(schema) {
  * @param {NodeRange} range
  * @returns {boolean}
  */
-function liftToOuterListFunc(tr, itemType, range) {
+function liftToOuterListFunc({ tr }, itemType, range) {
     let end = range.end, endOfList = range.$to.end(range.depth);
     if (end < endOfList) {
         // There are siblings after the lifted items, which must become
@@ -242,7 +239,7 @@ function liftToOuterListFunc(tr, itemType, range) {
  * @param {NodeRange} range
  * @returns {boolean}
  */
-function liftOutOfListFunc(tr, range) {
+function liftOutOfListFunc({ tr }, range) {
     let steps = tr.steps.length;
     let list = range.parent;
     // Merge the list items into a single big item
