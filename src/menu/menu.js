@@ -3,14 +3,15 @@ import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 /**
  * Generic menu system for ProseMirror editors
  * Provides reusable menu components with optimized state management
- * 
+ *
  * @fileoverview Core menu classes and utilities
  */
 
 /**
  * @typedef {import('prosemirror-view').EditorView} EditorView
  * @typedef {import('prosemirror-state').EditorState} EditorState
- * @typedef {import('prosemirror-state').Command} Command
+ * @typedef {import('prosemirror-model').MarkType} MarkType
+ * @typedef {import('../commands/types.d.ts').Command} Command
  * @typedef {import('./menu.d.ts').MenuItem} MenuItem
  * @typedef {import('./menu.d.ts').IconSpec} IconSpec
  * @typedef {import('./menu.d.ts').MenuItemSpec} MenuItemSpec
@@ -332,7 +333,7 @@ export class MenuView {
 
 /**
  * Custom toggle mark command that aligns with our active state logic
- * @param {import('prosemirror-model').MarkType} markType - Mark type to toggle
+ * @param {MarkType} markType - Mark type to toggle
  * @returns {Command} Toggle mark command
  */
 export function customToggleMark(markType) {
@@ -417,7 +418,7 @@ export function markItem(markType, options) {
         run: customToggleMark(markType),
         active: markActive(markType),
         enable: (state) => customToggleMark(markType)(state), // Check if command is available
-        ...options
+        ...options,
     };
     return new MenuItem(spec);
 }
@@ -436,7 +437,7 @@ export function blockTypeItem(nodeType, options) {
         run: command,
         active: blockActive(nodeType, attrs),
         enable: (state) => command(state), // Check if command is available
-        ...otherOptions
+        ...otherOptions,
     };
     return new MenuItem(spec);
 }
@@ -454,7 +455,7 @@ export function wrapItem(nodeType, options) {
     const spec = {
         run: command,
         enable: (state) => command(state), // Check if command is available
-        ...otherOptions
+        ...otherOptions,
     };
     return new MenuItem(spec);
 }

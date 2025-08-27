@@ -1,8 +1,8 @@
-import { setBlockType, wrapIn, autoJoin } from 'prosemirror-commands';
+import { setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
-import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
+import { wrapInList, splitListItem } from 'prosemirror-schema-list';
 import { keymap } from 'prosemirror-keymap';
-import { customBackspace, customSinkListItem, customLiftListItem } from '../commands';
+import { cmd, customBackspace, customSinkListItem, customLiftListItem } from '../commands';
 import {
     MenuItem,
     markItem,
@@ -22,9 +22,9 @@ import {
  */
 
 /**
- * @typedef {import('prosemirror-view').EditorView} EditorView
- * @typedef {import('prosemirror-state').EditorState} EditorState
- * @typedef {import('prosemirror-state').Command} Command
+ * @typedef {import('../commands/types.d.ts').EditorView} EditorView
+ * @typedef {import('../commands/types.d.ts').EditorState} EditorState
+ * @typedef {import('../commands/types.d.ts').Command} Command
  * @typedef {import('../menu/menu.d.ts').MenuItem} MenuItem
  * @typedef {import('../menu/menu.d.ts').IconSpec} IconSpec
  * @typedef {import('../menu/menu.d.ts').MenuItemSpec} MenuItemSpec
@@ -101,7 +101,7 @@ function cmdItem(command, options) {
  * @returns {Command} Link command function
  */
 function linkCommand(markType) {
-    return (state, dispatch, view) => {
+    return cmd((state, dispatch) => {
         if (state.selection.empty) return false;
 
         // If dispatch is null, we're just checking if command is available
@@ -131,7 +131,7 @@ function linkCommand(markType) {
         }
 
         return true;
-    };
+    });
 }
 
 /**
@@ -256,7 +256,7 @@ export function createMenuItems(schema) {
  * @returns {Command} Image insertion command
  */
 function insertImageCommand(schema) {
-    return (state, dispatch) => {
+    return cmd((state, dispatch) => {
         // If dispatch is null, we're just checking if command is available
         if (!dispatch) return true;
 
@@ -270,7 +270,7 @@ function insertImageCommand(schema) {
             dispatch(state.tr.replaceSelectionWith(node));
         }
         return true;
-    };
+    });
 }
 
 /**
@@ -279,7 +279,7 @@ function insertImageCommand(schema) {
  * @returns {Command} Hard break command
  */
 function insertHardBreakCommand(schema) {
-    return (state, dispatch) => {
+    return cmd((state, dispatch) => {
         const { $from, $to } = state.selection;
         if ($from.parent.type.spec.code) return false; // Don't insert in code blocks
         if (!dispatch) return true; // Just checking availability
@@ -288,7 +288,7 @@ function insertHardBreakCommand(schema) {
             dispatch(state.tr.replaceWith($from.pos, $to.pos, schema.nodes.hard_break.create()));
         }
         return true;
-    };
+    });
 }
 
 /**
@@ -297,7 +297,7 @@ function insertHardBreakCommand(schema) {
  * @returns {Command} Clear formatting command
  */
 function clearFormattingCommand(schema) {
-    return (state, dispatch) => {
+    return cmd((state, dispatch) => {
         const { from, to } = state.selection;
         if (from === to) return false;
         if (!dispatch) return true; // Just checking availability
@@ -315,7 +315,7 @@ function clearFormattingCommand(schema) {
         });
         dispatch(tr);
         return true;
-    };
+    });
 }
 
 /**
@@ -324,7 +324,7 @@ function clearFormattingCommand(schema) {
  * @returns {Command} Table insertion command
  */
 function insertTableCommand(schema) {
-    return (state, dispatch) => {
+    return cmd((state, dispatch) => {
         if (!dispatch) return true; // Just checking availability
 
         // Simple table as markdown text since basic schema doesn't support tables
@@ -332,7 +332,7 @@ function insertTableCommand(schema) {
         const node = schema.text(tableText);
         dispatch(state.tr.replaceSelectionWith(node));
         return true;
-    };
+    });
 }
 
 /**

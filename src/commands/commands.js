@@ -1,13 +1,13 @@
 import { joinBackward, lift, selectNodeBackward } from 'prosemirror-commands';
 import { atBlockStart, customDeleteBarrier, findCutBefore } from './transforms.js';
 import { backspaceList } from './list_commands.js';
+import { cmd } from './index.js';
 
 /**
- * @typedef {import('prosemirror-state').EditorState} EditorState
- * @typedef {import('prosemirror-state').Command} Command
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
+ * @typedef {import('./types.d.ts').Command} Command
  */
 
 /**
@@ -51,13 +51,7 @@ export function customBackspace(schema) {
     const paragraphType = schema.nodes.paragraph;
     const itemType = schema.nodes.list_item;
 
-    /**
-     * @param {EditorState} state
-     * @param {(tr: any) => void} dispatch
-     * @param {any} view
-     * @returns {boolean}
-     */
-    function command(state, dispatch, view) {
+    return cmd((state, dispatch, view) => {
         if (!state.selection.empty) {
             return false;
         }
@@ -110,7 +104,5 @@ export function customBackspace(schema) {
         }
 
         return true;
-    }
-
-    return command;
+    })
 }
