@@ -19,7 +19,8 @@ build/
 
 # Editor directories and files
 .vscode/
-.idea/
+.idea/*
+!.idea/inspectionProfiles
 .fleet/
 *.swp
 *.swo
