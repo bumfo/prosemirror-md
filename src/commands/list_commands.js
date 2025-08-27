@@ -18,32 +18,6 @@ import { Selection, EditorState } from 'prosemirror-state';
 const DEBUG = false;
 
 /**
- * Handle backspace behavior within lists
- * @param {EditorState} state
- * @param {(tr: any) => void} dispatch
- * @param {NodeType} itemType
- * @returns {boolean}
- */
-export const backspaceList = funcToCommand(backspaceListFunc)
-
-/**
- * @param {EditorState} state
- * @param {(tr: any) => void} dispatch
- * @param {NodeType} itemType
- * @param {NodeRange} range
- * @returns {boolean}
- */
-const liftToOuterList = funcToCommand(liftToOuterListFunc);
-
-/**
- * @param {EditorState} state
- * @param {(tr: any) => void} dispatch
- * @param {NodeRange} range
- * @returns {boolean}
- */
-const liftOutOfList = funcToCommand(liftOutOfListFunc);
-
-/**
  * @param {Func} func
  * @param {boolean} scroll
  * @returns {Command | ((state: EditorState, dispatch?: (tr: any) => void, ...args) => boolean)}
@@ -75,6 +49,15 @@ function funcToCommand(func, scroll = true) {
 
 /**
  * Handle backspace behavior within lists
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {NodeType} itemType
+ * @returns {boolean}
+ */
+export const backspaceList = funcToCommand(backspaceListFunc)
+
+/**
+ * Handle backspace behavior within lists
  * @param {Transform} tr
  * @param {Selection} selection
  * @param {NodeType} itemType
@@ -94,10 +77,9 @@ function backspaceListFunc({ tr, selection }, itemType) {
             if (DEBUG) console.log('second+ paragraph in list item, split anf lift');
 
             let pos = $from.before($from.depth);
-            if (splitListFunc(tr, pos)) {
+            if (splitListFunc({ tr }, pos)) {
                 let $pos = tr.doc.resolve(tr.mapping.map(pos));
-                if (liftOutOfListFunc(tr, $pos.blockRange($pos, listPredicate))) {
-                    dispatch(tr);
+                if (liftOutOfListFunc({ tr }, $pos.blockRange($pos, listPredicate))) {
                     return true;
                 }
             }
@@ -211,6 +193,15 @@ export function customLiftListItem(schema) {
 }
 
 /**
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {NodeType} itemType
+ * @param {NodeRange} range
+ * @returns {boolean}
+ */
+const liftToOuterList = funcToCommand(liftToOuterListFunc);
+
+/**
  * @param {Transform} tr
  * @param {NodeType} itemType
  * @param {NodeRange} range
@@ -233,6 +224,14 @@ function liftToOuterListFunc({ tr }, itemType, range) {
         tr.join($after.pos);
     return true;
 }
+
+/**
+ * @param {EditorState} state
+ * @param {(tr: any) => void} dispatch
+ * @param {NodeRange} range
+ * @returns {boolean}
+ */
+const liftOutOfList = funcToCommand(liftOutOfListFunc);
 
 /**
  * @param {Transform} tr
