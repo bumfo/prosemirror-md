@@ -1,14 +1,14 @@
 import { liftListItem, sinkListItem } from 'prosemirror-schema-list';
-import { ReplaceAroundStep, liftTarget, canJoin } from 'prosemirror-transform';
-import { NodeRange, Fragment, Slice } from 'prosemirror-model';
-import { Transform, canSplit } from 'prosemirror-transform';
+import { canJoin, canSplit, liftTarget, ReplaceAroundStep, Transform } from 'prosemirror-transform';
+import { Fragment, NodeRange, Slice } from 'prosemirror-model';
 import { EditorState } from 'prosemirror-state';
-import { cmd } from './index.js';
+import { cmd, funcToCommand } from './util.js';
 
 /**
  * @typedef {import('prosemirror-model').Schema} Schema
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
+ * @typedef {import('./types.d.ts').Transaction} Transaction
  * @typedef {import('./types.d.ts').Command} Command
  * @typedef {import('./types.d.ts').Func} Func
  */
@@ -18,75 +18,63 @@ import { cmd } from './index.js';
  */
 const DEBUG = false;
 
+function mapping(tr, steps = 0) {
+    if (steps === 0) return tr.mapping;
+    return tr.mapping.slice(steps);
+}
+
 /**
- * @param {Func} func
- * @param {boolean} scroll
- * @returns {Command | ((state: EditorState, dispatch?: (tr: any) => void, ...args) => boolean)}
+ * @param {Transaction} tr
+ * @param {NodeRange} range
+ * @param {NodeType} itemType
+ * @returns {boolean}
  */
-function funcToCommand(func, scroll = true) {
-    /**
-     * @param {EditorState} state
-     * @param {(tr: any) => void} dispatch
-     * @param args
-     * @returns {boolean}
-     */
-    function command(state, dispatch, ...args) {
-        let tr = state.tr;
-        if (!func(tr, ...args)) {
-            return false;
+function liftListParagraphFunc(tr, range, itemType) {
+    let steps = tr.steps.length;
+    let { $from } = range;
+
+    // Check if this is a second (or later) paragraph in a list item
+    let paragraphIndex = $from.index($from.depth - 1);
+    if (paragraphIndex > 0) {
+        if (DEBUG) console.log('second+ paragraph in list item, split anf lift');
+
+        let pos = $from.before($from.depth);
+        if (splitListFunc(tr, pos)) {
+            let $pos = tr.doc.resolve(mapping(tr, steps).map(pos));
+            if (liftOutOfListFunc(tr, getListRange($pos, $pos, itemType))) {
+                return true;
+            }
         }
 
-        if (dispatch) {
-            if (scroll) {
-                tr.scrollIntoView();
-            }
-            dispatch(tr);
-        }
+        console.warn('split & lift failed');
         return true;
     }
 
-    return command;
+    return false;
 }
 
 /**
  * Handle backspace behavior within lists
- * @param {EditorState} state
- * @param {(tr: any) => void} dispatch
  * @param {NodeType} itemType
- * @returns {boolean}
+ * @returns {Command}
  */
-export const backspaceList = funcToCommand((tr, itemType) => {
-    let { $from, $to } = tr.selection;
-
-    let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
-    let listRange = $from.blockRange($to, listPredicate);
-    if (listRange) {
+export function backspaceList(itemType) {
+    return funcToCommand((tr) => {
         if (DEBUG) console.log('backspaceList');
 
-        // Check if this is a second (or later) paragraph in a list item
-        const paragraphIndex = $from.index($from.depth - 1);
-        if (paragraphIndex > 0) {
-            if (DEBUG) console.log('second+ paragraph in list item, split anf lift');
-
-            let pos = $from.before($from.depth);
-            if (splitListFunc(tr, pos)) {
-                let $pos = tr.doc.resolve(tr.mapping.map(pos));
-                if (liftOutOfListFunc(tr, $pos.blockRange($pos, listPredicate))) {
-                    return true;
-                }
-            }
-
-            console.warn('split & lift failed');
+        let { $from, $to } = tr.selection;
+        let range = getListRange($from, $to, itemType);
+        if (liftListParagraphFunc(tr, range, itemType)) {
             return true;
         }
+        return liftOutOfListFunc(tr, range);
+    })
+}
 
-        if (liftOutOfListFunc(tr, listRange)) {
-            return true;
-        }
-    }
-
-    return false;
-})
+function getListRange($from, $to, itemType) {
+    let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
+    return $from.blockRange($to, listPredicate);
+}
 
 /**
  * @param {Transform} tr
@@ -114,7 +102,7 @@ function splitListFunc(tr, pos) {
 export function customSinkListItem(schema) {
     /** @type NodeType */
     const itemType = schema.nodes.list_item;
-    let sinkListCommand = sinkListItem(itemType);
+    const sinkListCommand = sinkListItem(itemType);
 
     return cmd((state, dispatch, view) => {
         if (!isListFirst(state, itemType, schema.nodes.paragraph)) {
@@ -135,16 +123,18 @@ export function customSinkListItem(schema) {
 export function customLiftListItem(schema) {
     /** @type NodeType */
     const itemType = schema.nodes.list_item;
-    let liftListCommand = liftListItem(itemType);
+    const liftListCommand = liftListItem(itemType);
 
-    return cmd((state, dispatch, view) => {
-        if (!isListFirst(state, itemType, schema.nodes.paragraph)) {
-            return false;
+    return funcToCommand((tr) => {
+        let { $from, $to } = tr.selection;
+        let range = getListRange($from, $to, itemType);
+        if (liftListParagraphFunc(tr, range, itemType)) {
+            return true;
         }
 
         // Use standard liftListItem behavior for single-paragraph list items
         // or first paragraph of multi-paragraph list items
-        return liftListCommand(state, dispatch, view);
+        return liftListItemFunc(tr, range, itemType);
     });
 }
 
@@ -187,6 +177,7 @@ const liftToOuterList = funcToCommand(liftToOuterListFunc);
  * @returns {boolean}
  */
 function liftToOuterListFunc(tr, itemType, range) {
+    let steps = tr.steps.length;
     let end = range.end, endOfList = range.$to.end(range.depth);
     if (end < endOfList) {
         // There are siblings after the lifted items, which must become
@@ -198,7 +189,7 @@ function liftToOuterListFunc(tr, itemType, range) {
     if (target == null)
         return false;
     tr.lift(range, target);
-    let $after = tr.doc.resolve(tr.mapping.map(end, -1) - 1);
+    let $after = tr.doc.resolve(mapping(tr, steps).map(end, -1) - 1);
     if (canJoin(tr.doc, $after.pos) && $after.nodeBefore.type === $after.nodeAfter.type)
         tr.join($after.pos);
     return true;
@@ -226,7 +217,7 @@ function liftOutOfListFunc(tr, range) {
         tr.delete(pos - 1, pos + 1);
     }
     let $start = tr.doc.resolve(range.start), item = $start.nodeAfter;
-    if (tr.mapping.slice(steps).map(range.end) !== range.start + $start.nodeAfter.nodeSize)
+    if (mapping(tr, steps).map(range.end) !== range.start + $start.nodeAfter.nodeSize)
         return false;
     let atStart = range.startIndex === 0, atEnd = range.endIndex === list.childCount;
     let parent = $start.node(-1), indexBefore = $start.index(-1);
@@ -239,4 +230,22 @@ function liftOutOfListFunc(tr, range) {
     tr.step(new ReplaceAroundStep(start - (atStart ? 1 : 0), end + (atEnd ? 1 : 0), start + 1, end - 1, new Slice((atStart ? Fragment.empty : Fragment.from(list.copy(Fragment.empty)))
         .append(atEnd ? Fragment.empty : Fragment.from(list.copy(Fragment.empty))), atStart ? 0 : 1, atEnd ? 0 : 1), atStart ? 0 : 1));
     return true;
+}
+
+/**
+ * @param {Transform} tr
+ * @param {NodeRange} range
+ * @param {NodeType} itemType
+ * @returns {boolean}
+ */
+function liftListItemFunc(tr, range, itemType) {
+    if (!range)
+        return false;
+
+    let { $from } = range;
+
+    if ($from.node(range.depth - 1).type === itemType) // Inside a parent list
+        return liftToOuterListFunc(tr, itemType, range);
+    else // Outer list node
+        return liftOutOfListFunc(tr, range);
 }
