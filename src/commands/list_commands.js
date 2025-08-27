@@ -9,7 +9,7 @@ import { Selection, EditorState } from 'prosemirror-state';
  * @typedef {import('prosemirror-model').NodeType} NodeType
  * @typedef {import('prosemirror-model').ResolvedPos} ResolvedPos
  * @typedef {(state: EditorState, dispatch?: (tr: any) => void, view?: EditorView) => boolean} Command
- * @typedef {({tr: Transform, selection: Selection?}, ...args) => boolean} Func
+ * @typedef {({tr: Transform, selection: {$from: ResolvedPos, $to: ResolvedPos}?}, ...args) => boolean} Func
  */
 
 /**
@@ -54,9 +54,13 @@ function funcToCommand(func, scroll = true) {
  * @param {NodeType} itemType
  * @returns {boolean}
  */
-export const backspaceList = funcToCommand(({ tr, selection }, itemType) => {
-    let { $from, $to } = selection;
-
+export const backspaceList = funcToCommand((
+    {
+        tr,
+        selection: { $from, $to },
+    },
+    itemType,
+) => {
     let listPredicate = node => node.childCount > 0 && node.firstChild.type === itemType;
     let listRange = $from.blockRange($to, listPredicate);
     if (listRange) {
