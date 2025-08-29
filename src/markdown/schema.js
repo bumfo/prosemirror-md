@@ -38,7 +38,7 @@ export const markdownSchema = new Schema({
         },
         heading: {
             attrs: { level: { default: 1 } },
-            content: '(text | image)*',
+            content: '(text | hard_break)*',
             group: 'block',
             defining: true,
             parseDOM: [{ tag: 'h1', attrs: { level: 1 } },
