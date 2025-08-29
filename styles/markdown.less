@@ -7,6 +7,18 @@
 @markdown-code-pink: #e83e8c;
 @markdown-link-color: #3498db;
 
+// Spacing variables
+@block-margin: 1rem;
+@list-indent: 2rem;
+
+// Heading margins (restored to previous values)
+@h1-margin: 1.5rem 1rem;
+@h2-margin: 1.5rem 1rem;
+@h3-margin: 1.25rem 1rem;
+@h4-margin: 1rem 0.75rem;
+@h5-margin: 1rem 0.75rem;
+@h6-margin: 1rem 0.75rem;
+
 // Font stacks
 @mono-font: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
 
@@ -31,7 +43,8 @@
     h1 {
         .heading-base();
         font-size: 2em;
-        margin: 1.5rem 0 1rem 0;
+        margin-block: @h1-margin;
+        margin-inline: 0;
         padding-bottom: 0.3rem;
         border-bottom: 1px solid @markdown-border-color;
     }
@@ -39,53 +52,51 @@
     h2 {
         .heading-base();
         font-size: 1.5em;
-        margin: 1.5rem 0 1rem 0;
+        margin-block: @h2-margin;
+        margin-inline: 0;
     }
     
     h3 {
         .heading-base();
         font-size: 1.25em;
-        margin: 1.25rem 0 1rem 0;
+        margin-block: @h3-margin;
+        margin-inline: 0;
     }
     
     h4 {
         .heading-base();
         font-size: 1em;
-        margin: 1rem 0 0.75rem 0;
+        margin-block: @h4-margin;
+        margin-inline: 0;
     }
     
     h5 {
         .heading-base();
         font-size: 0.875em;
-        margin: 1rem 0 0.75rem 0;
+        margin-block: @h5-margin;
+        margin-inline: 0;
     }
     
     h6 {
         .heading-base();
         font-size: 0.85em;
-        margin: 1rem 0 0.75rem 0;
+        margin-block: @h6-margin;
+        margin-inline: 0;
         color: @markdown-text-muted;
     }
     
     // Block elements
     p {
-        margin: 0 0 1rem 0;
+        margin-block: @block-margin;
+        margin-inline: 0;
     }
     
     blockquote {
-        margin: 1rem 0;
-        padding-left: 1rem;
+        margin-block: @block-margin;
+        margin-inline: 0;
+        padding-inline-start: 1rem;
         border-left: 4px solid @markdown-border-color;
         color: @markdown-text-muted;
-        // font-style: italic;
-        
-        p {
-            margin-bottom: 0.5rem;
-            
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
     }
     
     // Code styling
@@ -101,7 +112,8 @@
         border: 1px solid @markdown-border-color;
         border-radius: 6px;
         padding: 1rem;
-        margin: 1rem 0;
+        margin-block: @block-margin;
+        margin-inline: 0;
         overflow-x: auto;
         font-size: 0.875em;
         line-height: 1.45;
@@ -114,64 +126,22 @@
         }
     }
     
-    // Lists with proper nesting support
+    // Lists with consistent indentation and margins
     ul, ol {
-        margin: 1rem 0;
-        padding-left: 2rem;
-        
-        // Nested lists should have less top/bottom margin
-        ul, ol {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
-            
-            // Third level and deeper
-            ul, ol {
-                margin: 0.25rem 0;
-                padding-left: 1.25rem;
-            }
-        }
-        
-        // First-level lists at document root
-        &:first-child {
-            margin-top: 0;
-        }
-        
-        &:last-child {
-            margin-bottom: 0;
-        }
+        margin-block: @block-margin;
+        margin-inline: 0;
+        padding-inline-start: @list-indent;
     }
     
     li {
-        margin: 0.25rem 0;
+        margin-block: @block-margin;
+        margin-inline: 0;
         line-height: 1.6;
         
         // Paragraphs inside list items
         p {
-            margin: 0.25rem 0;
-            
-            // First paragraph in list item shouldn't have top margin
-            &:first-child {
-                margin-top: 0;
-            }
-            
-            // Last paragraph in list item shouldn't have bottom margin
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
-        
-        // Nested lists directly under list items
-        > ul, > ol {
-            margin-top: 0.25rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        // List items that contain only text (no paragraphs) 
-        &:has(> p:only-child) {
-            p {
-                display: inline;
-                margin: 0;
-            }
+            margin-block: @block-margin;
+            margin-inline: 0;
         }
     }
     
@@ -231,7 +201,8 @@
     hr {
         border: none;
         border-top: 1px solid @markdown-border-color;
-        margin: 2rem 0;
+        margin-block: 2rem;
+        margin-inline: 0;
     }
     
     // Images
