@@ -63,7 +63,7 @@ export function backspaceList(itemType) {
 
         // Fall back to lifting the entire list item out
         return liftOutOfListFunc(tr, range);
-    })
+    });
 }
 
 /**
