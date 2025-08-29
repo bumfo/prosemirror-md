@@ -30,7 +30,7 @@ export function findCutBefore($pos) {
 
 /**
  * Core join operation that works directly on transactions
- * 
+ *
  * @param {Transform} tr - The transaction to modify
  * @param {ResolvedPos} $cut - Position where joining should occur
  * @returns {boolean} True if join was successful
@@ -90,7 +90,7 @@ function doJoinFunc(tr, $cut) {
 
 /**
  * Delete barrier function that works directly on transactions
- * 
+ *
  * @param {Transform} tr - The transaction to modify
  * @param {ResolvedPos} $cut - Position of the barrier to delete
  * @returns {boolean} True if barrier was successfully deleted
@@ -100,7 +100,7 @@ export function deleteBarrierFunc(tr, $cut) {
 
     let before = $cut.nodeBefore, after = $cut.nodeAfter;
     let isolated = before.type.spec.isolating || after.type.spec.isolating;
-    
+
     if (!isolated) {
         if (before && after && before.type.compatibleContent(after.type)) {
             // if (DEBUG) console.log('compatible', before.type.contentMatch.next.map(x => x.type.name), after.type.contentMatch.next.map(x => x.type.name));
@@ -110,7 +110,6 @@ export function deleteBarrierFunc(tr, $cut) {
 
     let canDelAfter = !isolated && $cut.parent.canReplace($cut.index(), $cut.index() + 1);
     if (!canDelAfter) return false;
-    
+
     return doJoinFunc(tr, $cut);
 }
-
