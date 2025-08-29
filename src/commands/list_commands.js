@@ -102,9 +102,10 @@ export function customSinkListItem(schema) {
  * - Chooses between lifting to outer list or completely out of list based on context
  *
  * @param {Schema} schema - ProseMirror schema
+ * @param {boolean} allowLiftOut - Whether to lift out completely
  * @returns {Command} Custom lift list item command
  */
-export function customLiftListItem(schema) {
+export function customLiftListItem(schema, allowLiftOut = false) {
     const itemType = schema.nodes.list_item;
 
     return funcToCommand((tr) => {
@@ -118,8 +119,19 @@ export function customLiftListItem(schema) {
             return true;
         }
 
-        // Fall back to standard list item lifting
-        return liftListItemFunc(tr, range, itemType);
+        if (allowLiftOut) {
+            // Fall back to standard list item lifting
+            return liftListItemFunc(tr, range, itemType);
+        } else {
+            // Check if we're inside a nested list
+            if (range.$from.node(range.depth - 1).type === itemType) {
+                // Inside a parent list item - lift to outer list
+                return liftToOuterListFunc(tr, itemType, range);
+            } else {
+                // At the top level of a list - do nothing
+                return true;
+            }    
+        }
     });
 }
 
