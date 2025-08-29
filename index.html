@@ -39,19 +39,31 @@
     
     <link rel="stylesheet" href="./style.less">
 </head>
-<body>
+<body class=show-baseline>
     <div class="app">
         <header class="header">
             <h1>ProseMirror Markdown Editor</h1>
-            <div class="mode-switcher">
-                <label>
-                    <input type="checkbox" name="view" value="wysiwyg" checked data-view="wysiwyg">
-                    WYSIWYG
-                </label>
-                <label>
-                    <input type="checkbox" name="view" value="markdown" data-view="markdown">
-                    Markdown
-                </label>
+            <div class="header-controls">
+                <div class="mode-switcher">
+                    <label>
+                        <input type="checkbox" name="view" value="wysiwyg" checked data-view="wysiwyg">
+                        WYSIWYG
+                    </label>
+                    <label>
+                        <input type="checkbox" name="view" value="markdown" data-view="markdown">
+                        Markdown
+                    </label>
+                </div>
+                <div class="rhythm-switcher">
+                    <label>
+                        <input type="radio" name="rhythm" value="comfortable" checked>
+                        <span>Comfortable</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="rhythm" value="compact">
+                        <span>Compact</span>
+                    </label>
+                </div>
             </div>
         </header>
         

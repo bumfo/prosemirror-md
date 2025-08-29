@@ -7,17 +7,102 @@
 @markdown-code-pink: #e83e8c;
 @markdown-link-color: #3498db;
 
-// Spacing variables
-@block-margin: 1rem;
+// Base typography constants
+@base-font-size: 1rem;        // 16px
+@base-line-height: 1.6;       // Universal line-height for paragraphs
+@baseline-full: 1.6rem;       // Full line-height grid
+@baseline-half: 0.8rem;       // Half line-height grid
 @list-indent: 2rem;
 
-// Heading margins (restored to previous values)
-@h1-margin: 1.5rem 1rem;
-@h2-margin: 1.5rem 1rem;
-@h3-margin: 1.25rem 1rem;
-@h4-margin: 1rem 0.75rem;
-@h5-margin: 1rem 0.75rem;
-@h6-margin: 1rem 0.75rem;
+// CSS Custom Properties for theme switching
+// Default: Comfortable spacing (full baseline)
+:root {
+  // Rhythm units
+  --rhythm-unit: 1.6rem;
+  --rhythm-half: 0.8rem;
+  --rhythm-quarter: 0.4rem;
+  
+  // Correct approach: Use ABSOLUTE line-height values that align to baseline grid
+  // This ensures all headings have line-heights that are multiples of the grid unit
+  
+  // Absolute line-heights (in rem, not relative to font-size)
+  --h1-line-height: 3.2rem;    // 2 × 1.6rem baseline units
+  --h2-line-height: 3.2rem;    // 2 × 1.6rem baseline units  
+  --h3-line-height: 1.6rem;    // 1 × 1.6rem baseline unit
+  --h4-line-height: 1.6rem;    // 1 × 1.6rem baseline unit
+  --h5-line-height: 1.6rem;    // 1 × 1.6rem baseline unit
+  --h6-line-height: 1.6rem;    // 1 × 1.6rem baseline unit
+  
+  // Heading margins - calculated with absolute line-heights
+  --h1-margin-top: 3.2rem;     // H1: 3.2rem + 3.2rem + 1.6rem = 8rem (5 × 1.6rem)
+  --h1-margin-bottom: 1.6rem;
+  --h2-margin-top: 1.6rem;     // H2: 3.2rem + 1.6rem + 1.6rem = 6.4rem (4 × 1.6rem)
+  --h2-margin-bottom: 1.6rem;
+  --h3-margin-top: 1.6rem;     // H3: 1.6rem + 1.6rem + 1.6rem = 4.8rem (3 × 1.6rem)
+  --h3-margin-bottom: 1.6rem;
+  --h4-margin-top: 1.6rem;     // H4: 1.6rem + 1.6rem + 1.6rem = 4.8rem (3 × 1.6rem)
+  --h4-margin-bottom: 1.6rem;
+  --h5-margin-top: 1.6rem;     // H5: 1.6rem + 1.6rem + 1.6rem = 4.8rem (3 × 1.6rem)
+  --h5-margin-bottom: 1.6rem;
+  --h6-margin-top: 1.6rem;     // H6: 1.6rem + 1.6rem + 1.6rem = 4.8rem (3 × 1.6rem)
+  --h6-margin-bottom: 1.6rem;
+  
+  // Block element margins
+  --p-margin: 1.6rem;
+  --list-margin: 1.6rem;
+  --li-margin: 0.8rem;
+  --blockquote-margin: 1.6rem;
+  --pre-margin: 1.6rem;
+  --hr-margin: 3.2rem;
+  
+  // Grid overlay
+  --baseline-grid-size: 1.6rem;
+  --baseline-grid-color: rgba(0, 100, 255, 0.1);
+  --baseline-grid-color-minor: rgba(0, 100, 255, 0.05);
+}
+
+// Compact theme (half baseline)
+:root[data-rhythm="compact"],
+.rhythm-compact {
+  --rhythm-unit: 0.8rem;
+  --rhythm-half: 0.4rem;
+  --rhythm-quarter: 0.2rem;
+  
+  // Absolute line-heights for compact theme (multiples of 0.8rem)
+  --h1-line-height: 2.4rem;    // 3 × 0.8rem baseline units
+  --h2-line-height: 1.6rem;    // 2 × 0.8rem baseline units  
+  --h3-line-height: 1.6rem;    // 2 × 0.8rem baseline units
+  --h4-line-height: 0.8rem;    // 1 × 0.8rem baseline unit
+  --h5-line-height: 0.8rem;    // 1 × 0.8rem baseline unit
+  --h6-line-height: 0.8rem;    // 1 × 0.8rem baseline unit
+  
+  // Heading margins (compact) - calculated with absolute line-heights
+  --h1-margin-top: 1.6rem;     // H1: 2.4rem + 1.6rem + 0.8rem = 4.8rem (6 × 0.8rem)
+  --h1-margin-bottom: 0.8rem;
+  --h2-margin-top: 0.8rem;     // H2: 1.6rem + 0.8rem + 0.8rem = 3.2rem (4 × 0.8rem)
+  --h2-margin-bottom: 0.8rem;
+  --h3-margin-top: 0.8rem;     // H3: 1.6rem + 0.8rem + 0.8rem = 3.2rem (4 × 0.8rem)
+  --h3-margin-bottom: 0.8rem;
+  --h4-margin-top: 0.8rem;     // H4: 0.8rem + 0.8rem + 0.8rem = 2.4rem (3 × 0.8rem)
+  --h4-margin-bottom: 0.8rem;
+  --h5-margin-top: 0.8rem;     // H5: 0.8rem + 0.8rem + 0.8rem = 2.4rem (3 × 0.8rem)
+  --h5-margin-bottom: 0.8rem;
+  --h6-margin-top: 0.8rem;     // H6: 0.8rem + 0.8rem + 0.8rem = 2.4rem (3 × 0.8rem)
+  --h6-margin-bottom: 0.8rem;
+  
+  // Block element margins (compact)
+  --p-margin: 0.8rem;
+  --list-margin: 0.8rem;
+  --li-margin: 0.4rem;
+  --blockquote-margin: 0.8rem;
+  --pre-margin: 0.8rem;
+  --hr-margin: 1.6rem;
+  
+  // Grid overlay (shows half-lines)
+  --baseline-grid-size: 0.8rem;
+  --baseline-grid-color: rgba(255, 0, 100, 0.1);
+  --baseline-grid-color-minor: rgba(255, 0, 100, 0.05);
+}
 
 // Font stacks
 @mono-font: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -25,7 +110,6 @@
 // Mixins
 .heading-base() {
     font-weight: 600;
-    line-height: 1.25;
     color: @markdown-heading-color;
 }
 
@@ -43,7 +127,9 @@
     h1 {
         .heading-base();
         font-size: 2em;
-        margin-block: @h1-margin;
+        line-height: var(--h1-line-height);
+        margin-block-start: var(--h1-margin-top);
+        margin-block-end: calc(var(--h1-margin-bottom) - 0.3rem);
         margin-inline: 0;
         padding-bottom: 0.3rem;
         border-bottom: 1px solid @markdown-border-color;
@@ -52,47 +138,57 @@
     h2 {
         .heading-base();
         font-size: 1.5em;
-        margin-block: @h2-margin;
+        line-height: var(--h2-line-height);
+        margin-block-start: var(--h2-margin-top);
+        margin-block-end: var(--h2-margin-bottom);
         margin-inline: 0;
     }
     
     h3 {
         .heading-base();
         font-size: 1.25em;
-        margin-block: @h3-margin;
+        line-height: var(--h3-line-height);
+        margin-block-start: var(--h3-margin-top);
+        margin-block-end: var(--h3-margin-bottom);
         margin-inline: 0;
     }
     
     h4 {
         .heading-base();
         font-size: 1em;
-        margin-block: @h4-margin;
+        line-height: var(--h4-line-height);
+        margin-block-start: var(--h4-margin-top);
+        margin-block-end: var(--h4-margin-bottom);
         margin-inline: 0;
     }
     
     h5 {
         .heading-base();
         font-size: 0.875em;
-        margin-block: @h5-margin;
+        line-height: var(--h5-line-height);
+        margin-block-start: var(--h5-margin-top);
+        margin-block-end: var(--h5-margin-bottom);
         margin-inline: 0;
     }
     
     h6 {
         .heading-base();
         font-size: 0.85em;
-        margin-block: @h6-margin;
+        line-height: var(--h6-line-height);
+        margin-block-start: var(--h6-margin-top);
+        margin-block-end: var(--h6-margin-bottom);
         margin-inline: 0;
         color: @markdown-text-muted;
     }
     
     // Block elements
     p {
-        margin-block: @block-margin;
+        margin-block: var(--p-margin);
         margin-inline: 0;
     }
     
     blockquote {
-        margin-block: @block-margin;
+        margin-block: var(--blockquote-margin);
         margin-inline: 0;
         padding-inline-start: 1rem;
         border-left: 4px solid @markdown-border-color;
@@ -112,7 +208,7 @@
         border: 1px solid @markdown-border-color;
         border-radius: 6px;
         padding: 1rem;
-        margin-block: @block-margin;
+        margin-block: var(--pre-margin);
         margin-inline: 0;
         overflow-x: auto;
         font-size: 0.875em;
@@ -128,19 +224,19 @@
     
     // Lists with consistent indentation and margins
     ul, ol {
-        margin-block: @block-margin;
+        margin-block: var(--list-margin);
         margin-inline: 0;
         padding-inline-start: @list-indent;
     }
     
     li {
-        margin-block: @block-margin;
+        margin-block: var(--li-margin);
         margin-inline: 0;
         line-height: 1.6;
         
         // Paragraphs inside list items
         p {
-            margin-block: @block-margin;
+            margin-block: var(--p-margin);
             margin-inline: 0;
         }
     }
@@ -201,7 +297,7 @@
     hr {
         border: none;
         border-top: 1px solid @markdown-border-color;
-        margin-block: 2rem;
+        margin-block: var(--hr-margin);
         margin-inline: 0;
     }
     
@@ -229,5 +325,41 @@
         padding: 1rem;
         font-size: 16px; // Prevent zoom on iOS
         min-height: 300px;
+    }
+}
+
+// Development: Smart baseline grid overlay (toggle by adding .show-baseline class to body)
+.show-baseline {
+    .ProseMirror,
+    .markdown-textarea {
+        position: relative;
+        
+        &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1000;
+            background-image: 
+                // Major grid lines (every 2 units)
+                repeating-linear-gradient(
+                    to bottom,
+                    var(--baseline-grid-color) 0,
+                    var(--baseline-grid-color) 1px,
+                    transparent 1px,
+                    transparent calc(var(--baseline-grid-size) * 2)
+                ),
+                // Minor grid lines (every unit)
+                repeating-linear-gradient(
+                    to bottom,
+                    var(--baseline-grid-color-minor) 0,
+                    var(--baseline-grid-color-minor) 1px,
+                    transparent 1px,
+                    transparent var(--baseline-grid-size)
+                );
+        }
     }
 }

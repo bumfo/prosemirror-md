@@ -1,6 +1,54 @@
 import { ProseMirrorView } from './editor/wysiwyg-view.js';
 import { MarkdownView } from './editor/markdown-view.js';
 
+class RhythmSwitcher {
+    constructor() {
+        this.root = document.documentElement;
+        this.currentTheme = localStorage.getItem('rhythm-theme') || 'comfortable';
+        this.applyTheme(this.currentTheme);
+        this.setupListeners();
+    }
+    
+    applyTheme(theme) {
+        if (theme === 'compact') {
+            this.root.setAttribute('data-rhythm', 'compact');
+        } else {
+            this.root.removeAttribute('data-rhythm');
+        }
+        this.currentTheme = theme;
+        localStorage.setItem('rhythm-theme', theme);
+        
+        // Update UI state
+        this.updateUIState();
+    }
+    
+    toggle() {
+        const newTheme = this.currentTheme === 'comfortable' ? 'compact' : 'comfortable';
+        this.applyTheme(newTheme);
+    }
+    
+    setupListeners() {
+        // Listen for radio button changes
+        document.addEventListener('change', (e) => {
+            if (e.target.name === 'rhythm') {
+                this.applyTheme(e.target.value);
+            }
+        });
+    }
+    
+    updateUIState() {
+        // Update radio buttons to match current theme
+        const radios = document.querySelectorAll('input[name="rhythm"]');
+        radios.forEach(radio => {
+            radio.checked = radio.value === this.currentTheme;
+        });
+    }
+    
+    getCurrentTheme() {
+        return this.currentTheme;
+    }
+}
+
 class EditorManager {
     constructor(target, initialContent) {
         this.target = target;
@@ -218,16 +266,21 @@ class EditorManager {
 
 // Initialize the editor when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize rhythm switcher
+    const rhythmSwitcher = new RhythmSwitcher();
+    
     const editorContainer = document.getElementById('editor');
     const initialContent = document.getElementById('initial-content').value;
     
     if (editorContainer) {
         const editor = new EditorManager(editorContainer, initialContent);
         
-        // Make editor globally available for debugging
+        // Make editor and rhythm switcher globally available for debugging
         window.editor = editor;
+        window.rhythmSwitcher = rhythmSwitcher;
         
         console.log('ProseMirror Markdown Editor initialized');
+        console.log('Rhythm theme:', rhythmSwitcher.getCurrentTheme());
     } else {
         console.error('Editor container not found');
     }
