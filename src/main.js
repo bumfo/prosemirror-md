@@ -4,7 +4,7 @@ import { MarkdownView } from './editor/markdown-view.js';
 class RhythmSwitcher {
     constructor() {
         this.root = document.documentElement;
-        this.currentTheme = localStorage.getItem('rhythm-theme') || 'comfortable';
+        this.currentTheme = window.localStorage.getItem('rhythm-theme') || 'compact';
         this.applyTheme(this.currentTheme);
         this.setupListeners();
     }
@@ -16,7 +16,7 @@ class RhythmSwitcher {
             this.root.removeAttribute('data-rhythm');
         }
         this.currentTheme = theme;
-        localStorage.setItem('rhythm-theme', theme);
+        window.localStorage.setItem('rhythm-theme', theme);
         
         // Update UI state
         this.updateUIState();
